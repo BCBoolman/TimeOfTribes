@@ -1,1 +1,188 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Time of Tribes - De Wereld</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Specifieke toevoegingen voor de Kaart-interface */
+        #map { 
+            position: absolute;
+            top: 0; left: 0;
+            height: 100vh; 
+            width: 100vw; 
+            z-index: 2; /* Boven de clouds, onder de UI */
+            background: #000814; 
+        }
 
+        /* Overschrijf body flex-center zodat kaart vult */
+        body { display: block; }
+
+        /* Bovenste UI Balken */
+        .game-ui-top {
+            position: fixed;
+            top: 0; width: 100%;
+            z-index: 100;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none; /* Klikken gaat door naar kaart, behalve op knoppen */
+        }
+
+        .timer-row, .resource-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 20px;
+            color: #d1d1d1;
+            pointer-events: auto;
+        }
+
+        .timer-row { border-radius: 0; border-top: none; }
+        .resource-row { 
+            justify-content: space-around; 
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .logo-mini {
+            height: 40px;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+        }
+
+        /* Onderste UI Knoppen */
+        .game-ui-bottom {
+            position: fixed;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 100;
+            padding: 0 10px;
+        }
+
+        .game-btn {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #d1d1d1;
+            padding: 10px 15px;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.4s;
+            flex: 1;
+            max-width: 120px;
+        }
+
+        .game-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+            color: #fff;
+        }
+
+        /* Kaart filter om het in thema te houden */
+        .leaflet-container {
+            filter: grayscale(0.6) invert(0.9) hue-rotate(170deg) brightness(0.8) contrast(1.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="clouds-overlay"></div>
+
+    <div class="game-ui-top">
+        <div class="timer-row">
+            <div id="dayTimer">15:00</div>
+            <img src="images/Time of Tribes - logo.svg" alt="Logo" class="logo-mini">
+            <div id="playTimer">02:00:00</div>
+        </div>
+        
+        <div class="resource-row">
+            <div class="res">🌾 <span id="food">0</span></div>
+            <div class="res">🪵 <span id="wood">0</span></div>
+            <div class="res">🪨 <span id="stone">0</span></div>
+            <div class="res">💰 <span id="coins">0</span></div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="game-ui-bottom">
+        <button class="game-btn" onclick="locateUser()">GPS</button>
+        <button class="game-btn" onclick="window.location.href='handel.html'">Handel</button>
+        <button class="game-btn" id="interactBtn">Interactie</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialiseer kaart (Standaard op Nederland voor nu)
+        const map = L.map('map', {
+            zoomControl: false // Verwijder standaard knoppen voor cleaner look
+        }).setView([52.0907, 5.1214], 13);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        let userMarker;
+
+        function locateUser() {
+            map.locate({setView: true, maxZoom: 16});
+        }
+
+        map.on('locationfound', (e) => {
+            if (userMarker) {
+                userMarker.setLatLng(e.latlng);
+            } else {
+                userMarker = L.circleMarker(e.latlng, {
+                    radius: 8,
+                    fillColor: "#fff",
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+            }
+        });
+
+        // Timers Logic
+        function startTimers() {
+            let dayTime = 15 * 60;
+            let playTime = 2 * 60 * 60;
+
+            setInterval(() => {
+                if (dayTime > 0) {
+                    dayTime--;
+                    let m = Math.floor(dayTime / 60);
+                    let s = dayTime % 60;
+                    document.getElementById('dayTimer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                }
+                if (playTime > 0) {
+                    playTime--;
+                    let h = Math.floor(playTime / 3600);
+                    let m = Math.floor((playTime % 3600) / 60);
+                    let s = playTime % 60;
+                    document.getElementById('playTimer').innerText = `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+                }
+            }, 1000);
+        }
+
+        window.onload = () => {
+            if (!localStorage.getItem("tribe_player")) {
+                window.location.href = "index.html";
+            } else {
+                startTimers();
+            }
+        };
+    </script>
+</body>
+</html>
