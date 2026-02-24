@@ -11,7 +11,7 @@
     <div class="login-container">
         <img src="images/Time of Tribes - logo.svg" alt="Time of Tribes Logo" class="logo">
         
-        <h1>Stam Oudsten Login</h1>
+        <h1>Aanmelden</h1>
         
         <form id="loginForm">
             <div class="input-group">
@@ -24,7 +24,7 @@
                 <input type="password" id="pincode" placeholder="****" inputmode="numeric" pattern="[0-9]*" required>
             </div>
 
-            <button type="submit" id="loginBtn">Betreed de Tribe</button>
+            <button type="submit" id="loginBtn">Betreed de Stam</button>
         </form>
         
         <p id="message" class="error-msg"></p>
@@ -69,7 +69,7 @@
 
             } catch (error) {
                 message.innerText = "Er ging iets mis met de verbinding.";
-                loginBtn.innerText = "Betreed de Tribe";
+                loginBtn.innerText = "Betreed de Stam";
                 loginBtn.disabled = false;
             }
         });
