@@ -1,1 +1,78 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time of Tribes - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+    <div class="login-container">
+        <img src="images/Time of Tribes - logo.svg" alt="Time of Tribes Logo" class="logo">
+        
+        <h1>Stam Oudsten Login</h1>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Inlognaam</label>
+                <input type="text" id="username" placeholder="Bijv. Adelaar01" required>
+            </div>
+
+            <div class="input-group">
+                <label for="pincode">Pincode</label>
+                <input type="password" id="pincode" placeholder="****" inputmode="numeric" pattern="[0-9]*" required>
+            </div>
+
+            <button type="submit" id="loginBtn">Betreed de Tribe</button>
+        </form>
+        
+        <p id="message" class="error-msg"></p>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const message = document.getElementById('message');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const naam = document.getElementById('username').value;
+            const pin = document.getElementById('pincode').value;
+            
+            // Visuele feedback
+            loginBtn.innerText = "Controleren...";
+            loginBtn.disabled = true;
+
+            const scriptURL = "HIER_JE_APPS_SCRIPT_URL_PLAKKEN";
+
+            try {
+                // We sturen de data als tekst (no-cors) of via een omweg 
+                // omdat GAS vaak redirects geeft.
+                const response = await fetch(scriptURL, {
+                    method: "POST",
+                    body: JSON.stringify({ naam: naam, pin: pin }),
+                    mode: 'no-cors' // Let op: dit kan betekenen dat je geen JSON terugkrijgt
+                });
+
+                // Omdat 'no-cors' geen resultaat laat zien, is een 'GET' soms makkelijker.
+                // Voor nu gaan we ervan uit dat je GAS script werkt.
+                // Voor een simpele test kun je onderstaande regel gebruiken:
+                console.log("Poging tot inloggen verzonden...");
+                
+                // Tip: Gebruik localStorage om de naam te onthouden voor het spel
+                localStorage.setItem("tribe_player", naam);
+                
+                // Forward naar de spelpagina (pas dit aan naar jouw bestandsnaam)
+                // window.location.href = "game.html"; 
+
+            } catch (error) {
+                message.innerText = "Er ging iets mis met de verbinding.";
+                loginBtn.innerText = "Betreed de Tribe";
+                loginBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
