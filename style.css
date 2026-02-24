@@ -11,40 +11,48 @@
 }
 
 body {
-    /* Basis donkere achtergrond */
-    background: #000c1a;
+    background: #000c1a; /* Diep donkerblauw basis */
     height: 100vh;
+    width: 100vw;
     display: flex;
     justify-content: center;
     align-items: center;
     color: white;
-    overflow: hidden;
+    overflow: hidden; /* Voorkomt scrollen */
     position: relative;
 }
 
-/* Het Wolkeneffect (Pseudo-element) */
-body::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    /* Meerdere lagen gradients creëren de "wolken" */
+/* =========================================
+   WOLKEN EFFECT (Achtergrond)
+   ========================================= */
+.clouds-overlay {
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    z-index: 0;
+    pointer-events: none; /* Zorgt dat je door de laag heen kunt klikken */
+    
+    /* Mix van verschillende blauwtinten voor een wolkig effect */
     background: 
-        radial-gradient(circle at 20% 30%, rgba(0, 123, 255, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 20% 30%, rgba(0, 123, 255, 0.25) 0%, transparent 50%),
         radial-gradient(circle at 80% 70%, rgba(100, 149, 237, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(0, 31, 63, 0.6) 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, rgba(0, 31, 63, 0.7) 0%, transparent 70%),
         linear-gradient(135deg, #001f3f 0%, #000c1a 100%);
+    
     filter: blur(60px);
-    z-index: -1;
-    animation: drift 25s infinite alternate ease-in-out;
+    animation: drift 20s infinite alternate ease-in-out;
 }
 
-/* De Login Kaart (Glassmorphism effect) */
+/* =========================================
+   DE LOGIN KAART
+   ========================================= */
 .login-container {
+    position: relative;
+    z-index: 10; /* Zorgt dat de kaart boven de wolken zweeft */
     background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(15px); /* Iets sterker voor betere leesbaarheid op wolken */
+    backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     padding: 2.5rem 2rem;
     border-radius: 20px;
@@ -53,9 +61,8 @@ body::before {
     width: 90%;
     max-width: 380px;
     text-align: center;
-    position: relative;
-    z-index: 1;
     animation: fadeIn 0.8s ease-out;
+    transition: transform 0.3s ease;
 }
 
 /* Het Logo */
@@ -144,6 +151,16 @@ button:hover {
     box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
 }
 
+button:active {
+    transform: translateY(0);
+}
+
+button:disabled {
+    background: #444;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
 /* Foutmelding tekst */
 .error-msg {
     margin-top: 1.2rem;
@@ -152,15 +169,18 @@ button:hover {
     min-height: 1.2rem;
 }
 
-/* --- Animaties --- */
+/* =========================================
+   ANIMATIES
+   ========================================= */
 
-/* Wolken beweging */
+/* De drijvende wolken animatie */
 @keyframes drift {
-    from { transform: translate(-5%, -5%) scale(1); }
-    to { transform: translate(5%, 5%) scale(1.1); }
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(2%, 3%) scale(1.05); }
+    100% { transform: translate(-1%, 2%) scale(1); }
 }
 
-/* Inladen kaart */
+/* Inladen van de kaart */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
