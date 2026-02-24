@@ -68,9 +68,8 @@ body {
 .logo {
     width: 180px; 
     margin-bottom: 1.5rem;
-    /* Metalen glans effect */
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3)) grayscale(100%);
-    opacity: 0.8;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+    opacity: 1; 
 }
 
 h1 {
