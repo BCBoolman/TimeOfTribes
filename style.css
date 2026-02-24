@@ -1,152 +1,130 @@
-/* =========================================
-   PROJECT: Time of Tribes - Login Styles
-   ========================================= */
+/* Importeer een Skyrim-stijl font */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
 
-/* Basis instellingen en Reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    /* Cinzel geeft die "Elder Scrolls" look */
+    font-family: 'Cinzel', serif;
 }
 
 body {
-    background: #000c1a; /* Diep donkerblauw basis */
+    /* Donkerder, bijna zwart met een vleugje mist-grijs */
+    background: radial-gradient(circle, #1a1a1a 0%, #050505 100%);
     height: 100vh;
     width: 100vw;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
+    color: #d1d1d1; /* Gebroken wit/zilver */
     overflow: hidden; 
     position: relative;
 }
 
 /* =========================================
-   WOLKEN EFFECT (Nu lichter en feller)
+   SKYRIM SMOKE EFFECT
    ========================================= */
 .clouds-overlay {
     position: fixed;
-    top: -20%;
-    left: -20%;
-    width: 140%;
-    height: 140%;
-    z-index: 1; /* Staat nu boven de body-kleur */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
     pointer-events: none;
     
-    /* Lichtere blauwtinten en een vleugje wit voor contrast */
+    /* Rook-kleuren: zwart, grijs en heel transparant wit */
     background: 
-        radial-gradient(circle at 25% 25%, rgba(0, 162, 255, 0.4) 0%, transparent 50%),
-        radial-gradient(circle at 75% 75%, rgba(100, 200, 255, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(0, 80, 150, 0.6) 0%, transparent 70%),
-        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 30%);
+        radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 20% 50%, rgba(100, 100, 100, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 30%, rgba(0, 0, 0, 0.4) 0%, transparent 60%);
     
-    filter: blur(80px); /* Iets meer blur voor zachtere wolken */
-    animation: drift 15s infinite alternate ease-in-out;
+    filter: blur(60px);
+    /* De animatie is nu 'smoke' voor meer beweging */
+    animation: smoke 20s infinite alternate linear;
 }
 
 /* =========================================
-   DE LOGIN KAART
+   DE LOGIN KAART (Minimalistisch & Transparant)
    ========================================= */
 .login-container {
     position: relative;
-    z-index: 10; /* Staat ruim boven de wolkenlaag */
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    padding: 2.5rem 2rem;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2); /* Iets lichtere border */
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-    width: 90%;
-    max-width: 380px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.4); /* Veel subtieler */
+    backdrop-filter: blur(5px);
+    padding: 3rem;
+    /* Geen ronde hoeken, Skyrim is scherp en hoekig */
+    border-radius: 0; 
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+    width: 100%;
+    max-width: 450px;
     text-align: center;
-    animation: fadeIn 1s ease-out;
 }
 
 /* Logo & Tekst */
 .logo {
-    width: 220px; 
-    height: auto;
-    margin-bottom: 1rem;
-    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+    width: 180px; 
+    margin-bottom: 1.5rem;
+    /* Metalen glans effect */
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3)) grayscale(100%);
+    opacity: 0.8;
 }
 
 h1 {
-    font-size: 1.1rem;
-    font-weight: 400;
+    font-size: 1.4rem;
+    font-weight: 700;
     margin-bottom: 2rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 5px; /* Wijder uit elkaar voor die 'Epic' look */
+    color: #e0e0e0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
 /* Formulier */
-#loginForm {
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
-}
-
-.input-group { text-align: left; }
-
-label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.6);
-}
-
 input {
     width: 100%;
-    padding: 14px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    outline: none;
-    transition: 0.3s;
+    padding: 12px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Alleen onderlijn */
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+    font-size: 1rem;
+    transition: 0.5s;
+    letter-spacing: 1px;
 }
 
 input:focus {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #00a2ff;
+    background: rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid #fff;
+    outline: none;
 }
 
 button {
-    margin-top: 1rem;
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 10px;
-    background: #007bff;
-    color: white;
-    font-weight: 600;
+    margin-top: 2rem;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #d1d1d1;
+    padding: 12px 30px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
-    transition: 0.3s;
+    transition: all 0.4s ease;
 }
 
 button:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
-}
-
-.error-msg {
-    margin-top: 1.2rem;
-    color: #ff6b6b;
-    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
 /* =========================================
    ANIMATIES
    ========================================= */
-@keyframes drift {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(4%, 5%) scale(1.1); }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes smoke {
+    0% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+    50% { transform: scale(1.2) translate(-2%, -5%); opacity: 0.8; }
+    100% { transform: scale(1.1) translate(3%, 2%); opacity: 0.5; }
 }
