@@ -54,6 +54,15 @@
             height: 60px;
         }
 
+        /* Nieuwe styling voor de timers met icoontjes */
+        .timer-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-variant-numeric: tabular-nums; /* Voorkomt verspringen van cijfers */
+            min-width: 80px;
+        }
+
         .resource-row {
             display: flex;
             justify-content: space-around;
@@ -118,9 +127,11 @@
 
     <div class="game-ui-top">
         <div class="timer-row">
-            <div id="dayTimer">15:00</div>
+            <div class="timer-wrapper">☀️ <span id="dayTimer">15:00</span></div>
+            
             <img src="images/Time of Tribes - logo.svg" alt="Logo" class="logo-mini">
-            <div id="playTimer">02:00:00</div>
+            
+            <div class="timer-wrapper">⏳ <span id="playTimer">02:00:00</span></div>
         </div>
         
         <div class="resource-row">
@@ -141,11 +152,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- CONFIGURATIE ---
-        // LET OP: Gebruik hier de URL van je NIEUWE implementatie
         const scriptURL = "https://script.google.com/macros/s/AKfycbx5DMeIcF3lzi9KP6sQy8crVJLHfWT9fbxk4AhSErHBYCtjepJqCdxanh93tCok8IhY8g/exec"; 
 
-        // Initialisatie Kaart
         const map = L.map('map', {
             zoomControl: false,
             attributionControl: false,
@@ -156,25 +164,13 @@
 
         let userMarker;
 
-        // Functie: Grondstoffen Ophalen
         async function fetchResources() {
             const naam = localStorage.getItem("tribe_player");
-            if (!naam) {
-                console.warn("Geen speler gevonden in localStorage.");
-                return;
-            }
+            if (!naam) return;
 
             try {
-                // Toevoegen van een timestamp voorkomt dat de browser een oude versie uit het geheugen (cache) laadt
                 const finalURL = `${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${new Date().getTime()}`;
-                
-                const response = await fetch(finalURL, {
-                    method: "GET",
-                    redirect: "follow" // Belangrijk voor Google Scripts
-                });
-
-                if (!response.ok) throw new Error('Netwerk verbinding mislukt');
-
+                const response = await fetch(finalURL, { method: "GET", redirect: "follow" });
                 const data = await response.json();
 
                 if (data.result === "success") {
@@ -182,29 +178,21 @@
                     document.getElementById('wood').innerText = data.data.wood;
                     document.getElementById('stone').innerText = data.data.stone;
                     document.getElementById('coins').innerText = data.data.coins;
-                } else {
-                    console.error("Server fout:", data.msg);
                 }
             } catch (error) {
                 console.error("Fout bij ophalen grondstoffen:", error);
             }
         }
 
-        // GPS Functie
         function locateUser() {
             map.locate({setView: true, maxZoom: 17});
         }
 
         map.on('locationfound', (e) => {
             const playerStyle = {
-                radius: 10,
-                fillColor: "#8B0000",
-                color: "#ff0000",
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.9
+                radius: 10, fillColor: "#8B0000", color: "#ff0000",
+                weight: 2, opacity: 1, fillOpacity: 0.9
             };
-
             if (userMarker) {
                 userMarker.setLatLng(e.latlng);
             } else {
@@ -212,11 +200,6 @@
             }
         });
 
-        map.on('locationerror', () => {
-            console.warn("GPS kon niet worden gevonden.");
-        });
-
-        // Timer Systeem
         function startTimers() {
             let daySeconds = 15 * 60;
             let playSeconds = 2 * 60 * 60;
@@ -244,19 +227,15 @@
             }, 1000);
         }
 
-        // Check login en start
         window.onload = () => {
             const player = localStorage.getItem("tribe_player");
             if (!player) {
-                // Als er geen player is opgeslagen, stuur terug naar login
                 window.location.href = "index.html";
             } else {
                 startTimers();
                 locateUser();
-                fetchResources(); // Direct laden
-                
-                // Elke 30 seconden de teamvoorraad verversen
-                setInterval(fetchResources, 15000);
+                fetchResources();
+                setInterval(fetchResources, 15000); // Elke 15 seconden verversen
             }
         };
     </script>
