@@ -12,6 +12,10 @@
         body { 
             display: block; 
             background: #000814; 
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         #map { 
@@ -112,8 +116,6 @@
 </head>
 <body>
 
-    <div class="clouds-overlay"></div>
-
     <div class="game-ui-top">
         <div class="timer-row">
             <div id="dayTimer">15:00</div>
@@ -122,10 +124,10 @@
         </div>
         
         <div class="resource-row">
-            <div class="res-item">🌾 <span id="food">0</span></div>
-            <div class="res-item">🪵 <span id="wood">0</span></div>
-            <div class="res-item">🪨 <span id="stone">0</span></div>
-            <div class="res-item">💰 <span id="coins">0</span></div>
+            <div class="res-item">🌾 <span id="food">...</span></div>
+            <div class="res-item">🪵 <span id="wood">...</span></div>
+            <div class="res-item">🪨 <span id="stone">...</span></div>
+            <div class="res-item">💰 <span id="coins">...</span></div>
         </div>
     </div>
 
@@ -140,7 +142,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // --- CONFIGURATIE ---
-        // VERVANG DEZE URL DOOR JOUW NIEUWSTE GOOGLE APPS SCRIPT URL
+        // LET OP: Gebruik hier de URL van je NIEUWE implementatie
         const scriptURL = "https://script.google.com/macros/s/AKfycbx5DMeIcF3lzi9KP6sQy8crVJLHfWT9fbxk4AhSErHBYCtjepJqCdxanh93tCok8IhY8g/exec"; 
 
         // Initialisatie Kaart
@@ -157,10 +159,22 @@
         // Functie: Grondstoffen Ophalen
         async function fetchResources() {
             const naam = localStorage.getItem("tribe_player");
-            if (!naam) return;
+            if (!naam) {
+                console.warn("Geen speler gevonden in localStorage.");
+                return;
+            }
 
             try {
-                const response = await fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}`);
+                // Toevoegen van een timestamp voorkomt dat de browser een oude versie uit het geheugen (cache) laadt
+                const finalURL = `${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${new Date().getTime()}`;
+                
+                const response = await fetch(finalURL, {
+                    method: "GET",
+                    redirect: "follow" // Belangrijk voor Google Scripts
+                });
+
+                if (!response.ok) throw new Error('Netwerk verbinding mislukt');
+
                 const data = await response.json();
 
                 if (data.result === "success") {
@@ -168,6 +182,8 @@
                     document.getElementById('wood').innerText = data.data.wood;
                     document.getElementById('stone').innerText = data.data.stone;
                     document.getElementById('coins').innerText = data.data.coins;
+                } else {
+                    console.error("Server fout:", data.msg);
                 }
             } catch (error) {
                 console.error("Fout bij ophalen grondstoffen:", error);
@@ -232,11 +248,12 @@
         window.onload = () => {
             const player = localStorage.getItem("tribe_player");
             if (!player) {
+                // Als er geen player is opgeslagen, stuur terug naar login
                 window.location.href = "index.html";
             } else {
                 startTimers();
                 locateUser();
-                fetchResources(); // Eerste keer ophalen
+                fetchResources(); // Direct laden
                 
                 // Elke 30 seconden de teamvoorraad verversen
                 setInterval(fetchResources, 30000);
