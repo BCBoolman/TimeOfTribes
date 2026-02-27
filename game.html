@@ -86,51 +86,67 @@
             } catch (e) { console.error("Resource error", e); }
         }
 
-        async function fetchLocations() {
-            try {
-                const response = await fetch(`${scriptURL}?action=getLocations&t=${new Date().getTime()}`);
-                const json = await response.json();
-                if (json.result === "success") {
-                    locationLayer.clearLayers();
-                    json.data.forEach(loc => {
-                        const coords = loc.coords.split(',').map(c => parseFloat(c.trim()));
-                        if (coords.length !== 2) return;
+async function fetchLocations() {
+    try {
+        const response = await fetch(`${scriptURL}?action=getLocations&t=${new Date().getTime()}`);
+        const json = await response.json();
+        
+        if (json.result === "success") {
+            locationLayer.clearLayers();
+            
+            json.data.forEach(loc => {
+                const coords = loc.coords.split(',').map(c => parseFloat(c.trim()));
+                if (coords.length !== 2 || isNaN(coords[0])) return;
 
-                        // Cirkel tekenen
-                        const circle = L.circle(coords, {
-                            radius: 40,
-                            color: loc.kleur,
-                            fillColor: loc.kleur,
-                            fillOpacity: 0.4,
-                            weight: 2
-                        }).addTo(locationLayer);
+                // 1. Bepaal het icoon op basis van het type (kolom B)
+                // We maken alles kleine letters en halen spaties weg voor de check
+                const typeSchoon = loc.type.toLowerCase().trim();
+                let emoji = "📍"; // Standaard speld
 
-                        // Icoon toevoegen
-                        const emoji = resourceIcons[loc.type.toLowerCase()] || "📍";
-                        const icon = L.divIcon({
-                            html: `<div style="font-size: 24px; text-align: center; filter: drop-shadow(0 0 2px black);">${emoji}</div>`,
-                            className: 'custom-icon',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
-                        });
+                if (typeSchoon.includes("voedsel") || typeSchoon.includes("boerderij")) emoji = "🌾";
+                else if (typeSchoon.includes("hout")) emoji = "🪵";
+                else if (typeSchoon.includes("steen")) emoji = "🪨";
+                else if (typeSchoon.includes("goud") || typeSchoon.includes("geld")) emoji = "💰";
+                else if (typeSchoon.includes("basis") || typeSchoon.includes("kasteel")) emoji = "🏰";
 
-                        const marker = L.marker(coords, { icon: icon }).addTo(locationLayer);
+                // 2. Cirkel tekenen (Kleur uit kolom E van login tab via App Script)
+                const circle = L.circle(coords, {
+                    radius: 40,
+                    color: loc.kleur,
+                    fillColor: loc.kleur,
+                    fillOpacity: 0.4,
+                    weight: 2
+                }).addTo(locationLayer);
 
-                        // Pop-up inhoud
-                        const popupContent = `
-                            <div style="min-width: 150px;">
-                                <h3 style="margin:0 0 5px 0">${loc.omschrijving}</h3>
-                                <b>Type:</b> ${loc.type}<br>
-                                <b>Eigenaar:</b> ${loc.eigenaar}<br>
-                                <b>Status:</b> ${loc.status}
-                            </div>
-                        `;
-                        marker.bindPopup(popupContent);
-                        circle.bindPopup(popupContent);
-                    });
-                }
-            } catch (e) { console.error("Location error", e); }
+                // 3. Icoon Marker maken
+                const icon = L.divIcon({
+                    html: `<div style="font-size: 24px; text-align: center; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));">${emoji}</div>`,
+                    className: 'custom-icon',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                const marker = L.marker(coords, { icon: icon }).addTo(locationLayer);
+
+                // 4. Pop-up koppelen
+                const popupContent = `
+                    <div style="min-width: 150px; color: #000;">
+                        <h3 style="margin:0 0 5px 0; border-bottom: 1px solid #ccc;">${loc.omschrijving}</h3>
+                        <table style="width: 100%; font-size: 0.9rem;">
+                            <tr><td><b>Type:</b></td><td>${loc.type}</td></tr>
+                            <tr><td><b>Eigenaar:</b></td><td>${loc.eigenaar || "Niemand"}</td></tr>
+                            <tr><td><b>Status:</b></td><td>${loc.status}</td></tr>
+                        </table>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+                circle.bindPopup(popupContent);
+            });
         }
+    } catch (e) { 
+        console.error("Fout bij ophalen locaties:", e); 
+    }
+}
 
         function locateUser() {
             map.locate({setView: true, maxZoom: 17});
