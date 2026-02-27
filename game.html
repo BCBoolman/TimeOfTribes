@@ -6,121 +6,27 @@
     <title>Time of Tribes - De Wereld</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-    
     <style>
-        body { 
-            display: block; 
-            background: #000814; 
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        #map { 
-            position: absolute;
-            top: 0; left: 0;
-            height: 100vh; 
-            width: 100vw; 
-            z-index: 2;
-        }
-
+        body { display: block; background: #000814; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
+        #map { position: absolute; top: 0; left: 0; height: 100vh; width: 100vw; z-index: 2; }
+        
         .leaflet-container {
             filter: grayscale(0.7) invert(0.9) hue-rotate(170deg) brightness(0.7) contrast(1.3);
             background: #000814 !important;
         }
 
-        .game-ui-top {
-            position: fixed;
-            top: 0; 
-            left: 0;
-            width: 100%;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            pointer-events: none;
-        }
-
-        .timer-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.9);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px 15px;
-            color: #e0e0e0;
-            pointer-events: auto;
-            height: 60px;
-        }
-
-        /* Nieuwe styling voor de timers met icoontjes */
-        .timer-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-variant-numeric: tabular-nums; /* Voorkomt verspringen van cijfers */
-            min-width: 80px;
-        }
-
-        .resource-row {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            background: rgba(45, 45, 45, 0.95);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 8px 5px;
-            color: #d1d1d1;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-            pointer-events: auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .logo-mini {
-            height: 35px;
-            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-        }
-
-        .res-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .game-ui-bottom {
-            position: fixed;
-            bottom: 25px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            z-index: 100;
-            padding: 0 15px;
-        }
-
-        .game-btn {
-            background: rgba(0, 0, 0, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #d1d1d1;
-            padding: 12px 5px;
-            font-size: 0.7rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            cursor: pointer;
-            backdrop-filter: blur(8px);
-            transition: all 0.3s ease;
-            flex: 1;
-            max-width: 110px;
-            text-align: center;
-        }
-
-        .game-btn:active {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(0.95);
-        }
-
-        .leaflet-control-attribution { display: none; }
+        /* UI Styling */
+        .game-ui-top { position: fixed; top: 0; left: 0; width: 100%; z-index: 100; display: flex; flex-direction: column; pointer-events: none; }
+        .timer-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.9); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 15px; color: #e0e0e0; pointer-events: auto; }
+        .timer-wrapper { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; min-width: 80px; }
+        .resource-row { display: flex; justify-content: space-around; background: rgba(45, 45, 45, 0.95); padding: 8px 5px; color: #d1d1d1; font-size: 0.85rem; pointer-events: auto; }
+        .logo-mini { height: 35px; }
+        
+        .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 12px; z-index: 100; padding: 0 15px; }
+        .game-btn { background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(255, 255, 255, 0.2); color: #d1d1d1; padding: 12px 5px; font-size: 0.7rem; text-transform: uppercase; cursor: pointer; flex: 1; max-width: 110px; text-align: center; pointer-events: auto; }
+        
+        /* Pop-up styling reset (omdat de kaart inverted is) */
+        .leaflet-popup-content-wrapper { background: white; color: black; filter: none; }
     </style>
 </head>
 <body>
@@ -128,12 +34,9 @@
     <div class="game-ui-top">
         <div class="timer-row">
             <div class="timer-wrapper">☀️ <span id="dayTimer">15:00</span></div>
-            
             <img src="images/Time of Tribes - logo.svg" alt="Logo" class="logo-mini">
-            
             <div class="timer-wrapper">⏳ <span id="playTimer">02:00:00</span></div>
         </div>
-        
         <div class="resource-row">
             <div class="res-item">🌾 <span id="food">...</span></div>
             <div class="res-item">🪵 <span id="wood">...</span></div>
@@ -152,36 +55,81 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbx5DMeIcF3lzi9KP6sQy8crVJLHfWT9fbxk4AhSErHBYCtjepJqCdxanh93tCok8IhY8g/exec"; 
-
-        const map = L.map('map', {
-            zoomControl: false,
-            attributionControl: false,
-            tap: false
-        }).setView([52.0907, 5.1214], 15);
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwwFXSrppzVf5aJc8TBm34WBgDyGug9yafNGdGB7shzGgcgtTrCZ8Q9RDp78Jlo2enx9Q/exec"; 
         
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.0907, 5.1214], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         let userMarker;
+        let locationLayer = L.layerGroup().addTo(map);
+
+        const resourceIcons = {
+            "voedsel": "🌾",
+            "hout": "🪵",
+            "steen": "🪨",
+            "goud": "💰",
+            "basis": "🏰"
+        };
 
         async function fetchResources() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
-
             try {
-                const finalURL = `${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${new Date().getTime()}`;
-                const response = await fetch(finalURL, { method: "GET", redirect: "follow" });
+                const response = await fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}`);
                 const data = await response.json();
-
                 if (data.result === "success") {
                     document.getElementById('food').innerText = data.data.food;
                     document.getElementById('wood').innerText = data.data.wood;
                     document.getElementById('stone').innerText = data.data.stone;
                     document.getElementById('coins').innerText = data.data.coins;
                 }
-            } catch (error) {
-                console.error("Fout bij ophalen grondstoffen:", error);
-            }
+            } catch (e) { console.error("Resource error", e); }
+        }
+
+        async function fetchLocations() {
+            try {
+                const response = await fetch(`${scriptURL}?action=getLocations&t=${new Date().getTime()}`);
+                const json = await response.json();
+                if (json.result === "success") {
+                    locationLayer.clearLayers();
+                    json.data.forEach(loc => {
+                        const coords = loc.coords.split(',').map(c => parseFloat(c.trim()));
+                        if (coords.length !== 2) return;
+
+                        // Cirkel tekenen
+                        const circle = L.circle(coords, {
+                            radius: 40,
+                            color: loc.kleur,
+                            fillColor: loc.kleur,
+                            fillOpacity: 0.4,
+                            weight: 2
+                        }).addTo(locationLayer);
+
+                        // Icoon toevoegen
+                        const emoji = resourceIcons[loc.type.toLowerCase()] || "📍";
+                        const icon = L.divIcon({
+                            html: `<div style="font-size: 24px; text-align: center; filter: drop-shadow(0 0 2px black);">${emoji}</div>`,
+                            className: 'custom-icon',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        });
+
+                        const marker = L.marker(coords, { icon: icon }).addTo(locationLayer);
+
+                        // Pop-up inhoud
+                        const popupContent = `
+                            <div style="min-width: 150px;">
+                                <h3 style="margin:0 0 5px 0">${loc.omschrijving}</h3>
+                                <b>Type:</b> ${loc.type}<br>
+                                <b>Eigenaar:</b> ${loc.eigenaar}<br>
+                                <b>Status:</b> ${loc.status}
+                            </div>
+                        `;
+                        marker.bindPopup(popupContent);
+                        circle.bindPopup(popupContent);
+                    });
+                }
+            } catch (e) { console.error("Location error", e); }
         }
 
         function locateUser() {
@@ -189,53 +137,34 @@
         }
 
         map.on('locationfound', (e) => {
-            const playerStyle = {
-                radius: 10, fillColor: "#8B0000", color: "#ff0000",
-                weight: 2, opacity: 1, fillOpacity: 0.9
-            };
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                userMarker = L.circleMarker(e.latlng, playerStyle).addTo(map);
-            }
+            if (userMarker) { userMarker.setLatLng(e.latlng); } 
+            else { userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#ff0000", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map); }
         });
 
         function startTimers() {
             let daySeconds = 15 * 60;
             let playSeconds = 2 * 60 * 60;
-
-            const dayEl = document.getElementById('dayTimer');
-            const playEl = document.getElementById('playTimer');
-
             setInterval(() => {
-                if (daySeconds > 0) {
-                    daySeconds--;
-                    let m = Math.floor(daySeconds / 60);
-                    let s = daySeconds % 60;
-                    dayEl.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-                } else {
-                    daySeconds = 15 * 60;
-                }
+                if (daySeconds > 0) daySeconds--; else daySeconds = 15 * 60;
+                let m = Math.floor(daySeconds/60), s = daySeconds%60;
+                document.getElementById('dayTimer').innerText = `${m}:${s<10?'0':''}${s}`;
 
-                if (playSeconds > 0) {
-                    playSeconds--;
-                    let h = Math.floor(playSeconds / 3600);
-                    let m = Math.floor((playSeconds % 3600) / 60);
-                    let s = playSeconds % 60;
-                    playEl.innerText = `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-                }
+                if (playSeconds > 0) playSeconds--;
+                let ph = Math.floor(playSeconds/3600), pm = Math.floor((playSeconds%3600)/60), ps = playSeconds%60;
+                document.getElementById('playTimer').innerText = `${ph}:${pm<10?'0':''}${pm}:${ps<10?'0':''}${ps}`;
             }, 1000);
         }
 
         window.onload = () => {
-            const player = localStorage.getItem("tribe_player");
-            if (!player) {
+            if (!localStorage.getItem("tribe_player")) {
                 window.location.href = "index.html";
             } else {
                 startTimers();
                 locateUser();
                 fetchResources();
-                setInterval(fetchResources, 15000); // Elke 15 seconden verversen
+                fetchLocations();
+                setInterval(fetchResources, 15000);
+                setInterval(fetchLocations, 15000);
             }
         };
     </script>
