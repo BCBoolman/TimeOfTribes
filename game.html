@@ -6,41 +6,17 @@
     <title>Time of Tribes - Explorer</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- BASIS STYLING (Behouden) --- */
         body { margin: 0; padding: 0; background: #f0f0f0; font-family: sans-serif; overflow: hidden; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
-        .leaflet-container { background: #fff !important; }
-
-        /* --- UI ELEMENTEN (Behouden) --- */
         .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
         .timer-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.9); padding: 10px 15px; color: white; pointer-events: auto; }
         .resource-row { display: flex; justify-content: space-around; background: rgba(45,45,45,0.9); padding: 8px; color: #ddd; font-size: 0.85rem; pointer-events: auto; }
-
         .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 12px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
-        
-        .game-btn { 
-            background: rgba(0, 0, 0, 0.85); border: 1px solid rgba(255, 255, 255, 0.3); 
-            color: #ffffff; padding: 12px 5px; font-size: 0.75rem; text-transform: uppercase; 
-            cursor: pointer; flex: 1; max-width: 110px; text-align: center; pointer-events: auto;
-            border-radius: 4px; transition: all 0.1s ease;
-        }
-
-        /* --- KAART ELEMENTEN STYLING (Behouden + Gloed) --- */
-        .custom-div-icon { background: none !important; border: none !important; pointer-events: none; }
-        .custom-div-icon div {
-            font-size: 24px;
-            text-shadow: 0px 0px 3px rgba(0,0,0,0.8), 0px 0px 5px rgba(0,0,0,0.5);
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        .leaflet-popup-content-wrapper { background: white; color: black; border-radius: 8px; font-size: 14px; width: 220px; }
-        .gps-arrow-icon { display: flex; justify-content: center; align-items: center; filter: drop-shadow(0 0 2px white); }
-
-        .btn-interact {
-            background: #007bff; color: white; border: none; padding: 10px; width: 100%; 
-            border-radius: 4px; margin-top: 8px; font-weight: bold; cursor: pointer;
-        }
+        .game-btn { background: rgba(0,0,0,0.85); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 12px 5px; font-size: 0.75rem; text-transform: uppercase; border-radius: 4px; flex: 1; cursor: pointer; pointer-events: auto; }
+        .custom-div-icon div { font-size: 24px; text-shadow: 0px 0px 3px rgba(0,0,0,0.8), 0px 0px 5px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+        .btn-interact { background: #007bff; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; margin-top: 8px; font-weight: bold; cursor: pointer; }
         .btn-interact:disabled { background: #888; cursor: not-allowed; }
+        .gps-arrow-icon { display: flex; justify-content: center; align-items: center; filter: drop-shadow(0 0 2px white); }
     </style>
 </head>
 <body>
@@ -52,10 +28,8 @@
             <div>⏳ <span id="playTimer">02:00:00</span></div>
         </div>
         <div class="resource-row">
-            <div>🌾 <span id="food">0</span></div>
-            <div>🪵 <span id="wood">0</span></div>
-            <div>🪨 <span id="stone">0</span></div>
-            <div>💰 <span id="coins">0</span></div>
+            <div>🌾 <span id="food">0</span></div><div>🪵 <span id="wood">0</span></div>
+            <div>🪨 <span id="stone">0</span></div><div>💰 <span id="coins">0</span></div>
         </div>
     </div>
 
@@ -64,182 +38,105 @@
     <div class="game-ui-bottom">
         <button class="game-btn" onclick="locateUser(); requestCompassPermission();">GPS</button>
         <button class="game-btn" onclick="window.location.href='handel.html'">Handel</button>
-        <button class="game-btn" onclick="alert('Klik op een icoon op de kaart om te interacteren!')">Interactie</button>
+        <button class="game-btn" onclick="alert('Klik op een icoon om te interacteren!')">Interactie</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
     
     <script>
-        // VERVANG DEZE URL DOOR JE NIEUWSTE IMPLEMENTATIE URL
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxQ05DzveIi7ZLB9kW9zXT6VwrpI2zw6BSP18Fmzur4UBVxOxlOeWnqiAXxDgWlrSHtqA/exec"; 
-
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzYiZsu0vNGWmjep0scMiXdVo7rqdxvvqB5ODvTfULywZNl3O2vsW9DdhH64CsteLhBKg/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        
         const locationLayer = L.layerGroup().addTo(map);
-        let userMarker; 
-        let userTeam = "";
+        let userMarker, userTeam = "";
 
-        // KOMPAS LOGICA
-        function handleOrientation(event) {
-            let heading = event.alpha;
-            if (event.webkitCompassHeading) heading = event.webkitCompassHeading;
-            if (userMarker && heading !== undefined) userMarker.setRotationAngle(heading);
-        }
-
-        function requestCompassPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => { if (response == 'granted') window.addEventListener('deviceorientation', handleOrientation); })
-                    .catch(console.error);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
-        }
-
-        // EMOJI LOGICA
-        function getEmoji(locatieNaam) {
-            const n = locatieNaam.toLowerCase();
-            if (n.includes("voedsel")) return "🌾";
-            if (n.includes("hout")) return "🪵";
-            if (n.includes("steen")) return "🪨";
-            if (n.includes("basis")) return "🏰";
+        function getEmoji(n) {
+            const l = n.toLowerCase();
+            if (l.includes("voedsel")) return "🌾";
+            if (l.includes("hout")) return "🪵";
+            if (l.includes("steen")) return "🪨";
+            if (l.includes("basis")) return "🏰";
             return "📍";
         }
 
-        // GAME UPDATE LUS
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
 
-            // 1. Resources & Team ophalen
-            try {
-                const res = await fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${Date.now()}`);
-                const rData = await res.json();
-                if(rData.result === "success") {
-                    document.getElementById('food').innerText = rData.data.food;
-                    document.getElementById('wood').innerText = rData.data.wood;
-                    document.getElementById('stone').innerText = rData.data.stone;
-                    document.getElementById('coins').innerText = rData.data.coins;
-                    userTeam = rData.data.team;
+            const r = await fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${Date.now()}`);
+            const rData = await r.json();
+            if(rData.result === "success") {
+                document.getElementById('food').innerText = rData.data.food;
+                document.getElementById('wood').innerText = rData.data.wood;
+                document.getElementById('stone').innerText = rData.data.stone;
+                document.getElementById('coins').innerText = rData.data.coins;
+                userTeam = rData.data.team;
+            }
+
+            const lRes = await fetch(`${scriptURL}?action=getLocations&t=${Date.now()}`);
+            const lData = await lRes.json();
+            locationLayer.clearLayers();
+            lData.data.forEach(loc => {
+                const coords = loc.coords.split(',').map(Number);
+                const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
+                const binnen = dist <= 25;
+
+                let btnTxt = ""; let act = ""; let time = 0;
+                const eigenaarSchoon = loc.eigenaar.toLowerCase().trim();
+                const teamSchoon = userTeam.toLowerCase().trim();
+
+                if (eigenaarSchoon === "geen") {
+                    btnTxt = binnen ? "Claim (75/75/75)" : "Niet in zone"; act = "claim"; time = 30;
+                } else if (eigenaarSchoon === teamSchoon) {
+                    btnTxt = binnen ? "Upgrade Mijn" : "Upgrade (niet in zone)"; act = "upgrade"; time = 0;
+                    if(loc.type.includes("Upgrade 2")) { btnTxt = "Max Niveau"; act = ""; }
+                } else {
+                    btnTxt = binnen ? "Val aan (75 Munten)" : "Aanval (niet in zone)"; act = "attack";
+                    time = (loc.type.includes("Upgrade 1")) ? 135 : (loc.type.includes("Upgrade 2")) ? 180 : 90;
                 }
-            } catch(e) { console.log("Fout bij resources"); }
 
-            // 2. Locaties ophalen & Knoppen logica
-            try {
-                const locRes = await fetch(`${scriptURL}?action=getLocations&t=${Date.now()}`);
-                const lData = await locRes.json();
-                if(lData.result === "success") {
-                    locationLayer.clearLayers();
-                    lData.data.forEach(loc => {
-                        const coords = loc.coords.split(',').map(Number);
-                        const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
-                        const binnenBereik = dist <= 25;
+                const popupHTML = `<div style="text-align:center;"><b>${loc.locatie}</b><br><small>${loc.type}</small><br><small>Team: ${loc.eigenaar}</small><hr><button class="btn-interact" ${(!binnen || act==="")?'disabled':''} id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])">${btnTxt}</button></div>`;
 
-                        let btnTxt = "";
-                        let act = "";
-                        let time = 0;
-                        let knopUitschakelen = !binnenBereik;
-
-                        const eigenaarSchoon = loc.eigenaar.toLowerCase().trim();
-                        const teamSchoon = userTeam.toLowerCase().trim();
-
-                        // Logica voor status bepaling
-                        if (eigenaarSchoon === "geen") {
-                            btnTxt = binnenBereik ? "Claim (75/75/75)" : "Niet in zone";
-                            act = "claim"; time = 30;
-                        } 
-                        else if (eigenaarSchoon === teamSchoon) {
-                            if (loc.type.includes("Upgrade 2")) {
-                                btnTxt = "Max Niveau"; knopUitschakelen = true;
-                            } else {
-                                btnTxt = binnenBereik ? "Upgrade Mijn" : "Upgrade (niet in zone)";
-                                act = "upgrade"; time = 0;
-                            }
-                        } 
-                        else {
-                            btnTxt = binnenBereik ? "Val aan (75 Munten)" : "Aanval (niet in zone)";
-                            act = "attack"; 
-                            time = (loc.type.includes("Upgrade 1")) ? 135 : (loc.type.includes("Upgrade 2")) ? 180 : 90;
-                        }
-
-                        const popupHTML = `
-                            <div style="text-align:center;">
-                                <strong>${loc.locatie}</strong><br>
-                                <small>Niveau: ${loc.type}</small><br>
-                                <small>Eigenaar: ${loc.eigenaar}</small><hr>
-                                <button class="btn-interact" 
-                                    ${knopUitschakelen ? 'disabled' : ''} 
-                                    id="btn-${loc.id}" 
-                                    onclick="startInteract(${loc.id}, '${act}', ${time}, [${coords}])">
-                                    ${btnTxt}
-                                </button>
-                                ${!binnenBereik ? `<br><small style="color:red;">Loop ${(dist - 25).toFixed(0)}m dichterbij</small>` : ''}
-                            </div>
-                        `;
-
-                        L.circle(coords, { radius: 25, color: loc.kleur, fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
-                        L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html:`<div>${getEmoji(loc.locatie)}</div>` }), interactive: false }).addTo(locationLayer);
-                    });
-                }
-            } catch(e) { console.log("Fout bij locaties"); }
+                L.circle(coords, { radius: 25, color: loc.kleur, fillColor: loc.kleur, fillOpacity: 0.4, weight: 3 }).addTo(locationLayer).bindPopup(popupHTML);
+                L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html:`<div>${getEmoji(loc.locatie)}</div>` }), interactive: false }).addTo(locationLayer);
+            });
         }
 
-        // INTERACTIE TIMER
         function startInteract(id, act, time, coords) {
-            if (time === 0) { executeAction(id, act); return; }
-            
-            let timeLeft = time;
-            const btn = document.getElementById(`btn-${id}`);
-            btn.disabled = true;
-
-            const timerInterval = setInterval(() => {
-                timeLeft--;
-                btn.innerText = `Wachten... (${timeLeft}s)`;
-
-                if (map.distance(userMarker.getLatLng(), coords) > 25) {
-                    clearInterval(timerInterval);
-                    alert("Interactie afgebroken! Je verliet de zone.");
-                    updateGame();
-                    return;
-                }
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    executeAction(id, act);
-                }
+            if (time === 0) { execute(id, act); return; }
+            let t = time; const btn = document.getElementById(`btn-${id}`); btn.disabled = true;
+            const itv = setInterval(() => {
+                t--; btn.innerText = `Wachten... (${t}s)`;
+                if (map.distance(userMarker.getLatLng(), coords) > 25) { clearInterval(itv); alert("Zone verlaten!"); updateGame(); }
+                if (t <= 0) { clearInterval(itv); execute(id, act); }
             }, 1000);
         }
 
-        async function executeAction(id, subAction) {
-            const naam = localStorage.getItem("tribe_player");
-            const response = await fetch(`${scriptURL}?action=interact&subAction=${subAction}&id=${id}&naam=${encodeURIComponent(naam)}`);
-            const data = await response.json();
-            alert(data.msg);
-            updateGame();
+        async function execute(id, act) {
+            const n = localStorage.getItem("tribe_player");
+            const res = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&naam=${encodeURIComponent(n)}`);
+            const d = await res.json(); alert(d.msg); updateGame();
         }
 
-        // GPS FUNCTIES
-        function locateUser() { map.locate({setView: true, maxZoom: 17}); }
+        function handleOrientation(e) {
+            let h = e.alpha; if (e.webkitCompassHeading) h = e.webkitCompassHeading;
+            if (userMarker && h !== undefined) userMarker.setRotationAngle(h);
+        }
 
-        map.on('locationfound', (e) => {
-            if (!userMarker) {
-                userMarker = L.marker(e.latlng, {
-                    icon: L.divIcon({ className: 'gps-arrow-icon', html: '<div style="font-size: 35px; color: #007bff;">▲</div>', iconSize: [40, 40], iconAnchor: [20, 20] }),
-                    rotationAngle: 0, rotationOrigin: 'center center'
-                }).addTo(map);
-                userMarker.bindPopup("Jij bent hier").openPopup();
-            } else {
-                userMarker.setLatLng(e.latlng);
-            }
+        function requestCompassPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(res => { if (res == 'granted') window.addEventListener('deviceorientation', handleOrientation); });
+            } else { window.addEventListener('deviceorientation', handleOrientation); }
+        }
+
+        function locateUser() { map.locate({setView: true, maxZoom: 17}); }
+        map.on('locationfound', e => {
+            if (!userMarker) userMarker = L.marker(e.latlng, { icon: L.divIcon({ className: 'gps-arrow-icon', html: '<div style="font-size: 35px; color: #007bff;">▲</div>' }), rotationAngle: 0 }).addTo(map);
+            else userMarker.setLatLng(e.latlng);
         });
 
-        window.onload = () => {
-            updateGame();
-            setInterval(updateGame, 20000); 
-            locateUser();
-        };
+        window.onload = () => { updateGame(); setInterval(updateGame, 20000); locateUser(); };
     </script>
 </body>
 </html>
