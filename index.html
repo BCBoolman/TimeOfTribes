@@ -2,83 +2,246 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time of Tribes - Login</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Time of Tribes - Explorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; background: #f0f0f0; font-family: sans-serif; overflow: hidden; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
+        
+        /* UI Top */
+        .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
+        .timer-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.9); padding: 10px 15px; color: white; pointer-events: auto; }
+        .resource-row { display: flex; justify-content: space-around; background: rgba(45,45,45,0.9); padding: 8px; color: #ddd; font-size: 0.85rem; pointer-events: auto; }
+        
+        /* UI Bottom */
+        .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 12px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
+        .game-btn { background: rgba(0,0,0,0.85); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 12px 5px; font-size: 0.75rem; text-transform: uppercase; border-radius: 4px; flex: 1; cursor: pointer; pointer-events: auto; }
+        
+        /* Markers & Icons */
+        .custom-div-icon div { font-size: 24px; text-shadow: 0px 0px 3px rgba(0,0,0,0.8), 0px 0px 5px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+        .gps-arrow-icon { display: flex; justify-content: center; align-items: center; filter: drop-shadow(0 0 2px white); }
+        
+        /* Popup Styling */
+        .btn-interact { background: #007bff; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; margin-top: 8px; font-weight: bold; cursor: pointer; }
+        .btn-interact:disabled { background: #888; cursor: not-allowed; }
+        .cost-tag { font-size: 0.75rem; color: #666; display: block; margin-top: 4px; font-style: italic; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 10px 0; }
+    </style>
 </head>
 <body>
-    <div class="clouds-overlay"></div> 
-    <div class="login-container">
-        <img src="images/Time of Tribes - logo.svg" alt="Time of Tribes Logo" class="logo">
-        
-        <h1>Aanmelden</h1>
-        
-        <form id="loginForm">
-            <div class="input-group">
-                <label for="username">Inlognaam</label>
-                <input type="text" id="username" placeholder="Bijv. Ptolemaeus" required>
-            </div>
 
-            <div class="input-group">
-                <label for="pincode">Pincode</label>
-                <input type="password" id="pincode" placeholder="****" inputmode="numeric" pattern="[0-9]*" required>
-            </div>
-
-            <button type="submit" id="loginBtn">Betreed het Spel</button>
-        </form>
-        
-        <p id="message" class="error-msg"></p>
+    <div class="game-ui-top">
+        <div class="timer-row">
+            <div>☀️ <span id="dayTimer">15:00</span></div>
+            <div style="font-weight: bold;">VERKENNING</div>
+            <div>⏳ <span id="playTimer">02:00:00</span></div>
+        </div>
+        <div class="resource-row">
+            <div>🌾 <span id="food">0</span></div>
+            <div>🪵 <span id="wood">0</span></div>
+            <div>🪨 <span id="stone">0</span></div>
+            <div>💰 <span id="coins">0</span></div>
+        </div>
     </div>
 
-<script>
-    const loginForm = document.getElementById('loginForm');
-    const loginBtn = document.getElementById('loginBtn');
-    const message = document.getElementById('message');
+    <div id="map"></div>
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    <div class="game-ui-bottom">
+        <button class="game-btn" onclick="locateUser(); requestCompassPermission();">GPS</button>
+        <button class="game-btn" onclick="window.location.href='handel.html'">Handel</button>
+        <button class="game-btn" onclick="alert('Klik op een icoon op de kaart om te beginnen.')">Interactie</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
+    
+    <script>
+        // VERVANG DIT DOOR JE NIEUWSTE URL ELKE KEER DAT JE HET APPS SCRIPT AANPAST
+        const scriptURL = "https://script.google.com/macros/s/AKfycbyK222owVQ-kMzu872Ydl7r7oeyknSKQzmmQa6eE094scr5FXwHr1Le8VuJsrPHuJyyXQ/exec"; 
+
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        const locationLayer = L.layerGroup().addTo(map);
         
-        const naam = document.getElementById('username').value;
-        const pin = document.getElementById('pincode').value;
-        
-        loginBtn.innerText = "Controleren...";
-        loginBtn.disabled = true;
-        message.innerText = "";
+        let userMarker; 
+        let userTeam = "";
 
-        // Gebruik je meest recente Web App URL na de 'Nieuwe implementatie'
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzQfcW_Ce2e-t_EU771cPTps6qbiNJn11Rcvaa0YF6alHyWdTM1mi_t8j0D1-ALsJPhWQ/exec"; 
-
-        try {
-            // CRUCIALE AANPASSING: action=login toegevoegd aan de parameters
-            const urlWithParams = `${scriptURL}?action=login&naam=${encodeURIComponent(naam)}&pin=${encodeURIComponent(pin)}`;
-            
-            const response = await fetch(urlWithParams);
-            
-            // Controleer of de response ok is voordat we JSON parsen
-            if (!response.ok) throw new Error('Netwerk respons was niet ok');
-            
-            const data = await response.json();
-
-            if (data.result === "success") {
-                localStorage.setItem("tribe_player", naam);
-                message.style.color = "green";
-                message.innerText = "Inloggen geslaagd! Je wordt doorgestuurd...";
-                
-                setTimeout(() => {
-                    window.location.href = "game.html"; 
-                }, 1500);
-            } else {
-                message.innerText = "Inlognaam of pincode onjuist.";
-                loginBtn.innerText = "Betreed de Stam";
-                loginBtn.disabled = false;
-            }
-        } catch (error) {
-            console.error("Fetch error:", error);
-            message.innerText = "Er ging iets mis met de verbinding. Probeer het later opnieuw.";
-            loginBtn.innerText = "Betreed de Stam";
-            loginBtn.disabled = false;
+        // 1. EMOJI SELECTIE
+        function getEmoji(n) {
+            const l = n.toLowerCase();
+            if (l.includes("voedsel")) return "🌾";
+            if (l.includes("hout")) return "🪵";
+            if (l.includes("steen")) return "🪨";
+            return "🏰";
         }
-    });
-</script>
+
+        // 2. HOOFD FUNCTIE: DATA OPHALEN & KAART TEKENEN
+        async function updateGame() {
+            const naam = localStorage.getItem("tribe_player");
+            if (!naam) return;
+
+            // Resources ophalen
+            const r = await fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${Date.now()}`);
+            const rData = await r.json();
+            if(rData.result === "success") {
+                document.getElementById('food').innerText = rData.data.food;
+                document.getElementById('wood').innerText = rData.data.wood;
+                document.getElementById('stone').innerText = rData.data.stone;
+                document.getElementById('coins').innerText = rData.data.coins;
+                userTeam = rData.data.team;
+            }
+
+            // Locaties ophalen
+            const lRes = await fetch(`${scriptURL}?action=getLocations&t=${Date.now()}`);
+            const lData = await lRes.json();
+            locationLayer.clearLayers();
+
+            lData.data.forEach(loc => {
+                const coords = loc.coords.split(',').map(Number);
+                const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
+                const binnen = dist <= 25;
+
+                let btnTxt = ""; 
+                let costTxt = ""; 
+                let act = ""; 
+                let time = 0;
+
+                const eigenaarSchoon = loc.eigenaar.toLowerCase().trim();
+                const teamSchoon = userTeam.toLowerCase().trim();
+
+                // LOGICA VOOR POPUP INHOUD
+                if (eigenaarSchoon === "geen") {
+                    btnTxt = "Claim Locatie";
+                    costTxt = "Kosten: 75 🌾, 75 🪵, 75 🪨";
+                    act = "claim"; time = 30;
+                } else if (eigenaarSchoon === teamSchoon) {
+                    if (loc.type.toLowerCase() === "standaard") {
+                        btnTxt = "Upgrade: Gewapende Arbeiders";
+                        costTxt = "Kosten: 50 🌾, 50 💰";
+                        act = "upgrade"; time = 0;
+                    } else if (loc.type === "Gewapende Arbeiders") {
+                        btnTxt = "Upgrade: Buitenpost";
+                        costTxt = "Kosten: 75 🪵, 75 🪨";
+                        act = "upgrade"; time = 0;
+                    } else {
+                        btnTxt = "Maximaal Niveau"; act = ""; costTxt = "Deze mijn is volledig verbeterd.";
+                    }
+                } else {
+                    btnTxt = "Val aan";
+                    costTxt = "Kosten: 75 💰";
+                    act = "attack";
+                    time = (loc.type === "Gewapende Arbeiders") ? 135 : (loc.type === "Buitenpost") ? 180 : 90;
+                }
+
+                const popupHTML = `
+                    <div style="text-align:center;">
+                        <strong style="font-size:16px;">${loc.locatie}</strong><br>
+                        <small>Status: ${loc.type}</small><br>
+                        <small>Team: ${loc.eigenaar}</small>
+                        <hr>
+                        <span class="cost-tag">${costTxt}</span>
+                        <button class="btn-interact" ${(!binnen || act==="")?'disabled':''} id="btn-${loc.id}" 
+                        onclick="startInteract(${loc.id},'${act}',${time},[${coords}])">
+                            ${binnen ? btnTxt : "Loop dichterbij (" + Math.round(dist) + "m)"}
+                        </button>
+                    </div>`;
+
+                // CIRKEL MET TEAMKLEUR
+                L.circle(coords, { 
+                    radius: 25, 
+                    color: loc.kleur, 
+                    fillColor: loc.kleur, 
+                    fillOpacity: 0.4, 
+                    weight: 3 
+                }).addTo(locationLayer).bindPopup(popupHTML);
+
+                // ICON/EMOJI
+                L.marker(coords, { 
+                    icon: L.divIcon({ className:'custom-div-icon', html:`<div>${getEmoji(loc.locatie)}</div>` }), 
+                    interactive: false 
+                }).addTo(locationLayer);
+            });
+        }
+
+        // 3. INTERACTIE & TIMER LOGICA
+        function startInteract(id, act, time, coords) {
+            if (time === 0) { execute(id, act); return; }
+            
+            let t = time; 
+            const btn = document.getElementById(`btn-${id}`); 
+            btn.disabled = true;
+            
+            const itv = setInterval(() => {
+                t--; 
+                btn.innerText = `Bezig... (${t}s)`;
+                
+                // Veiligheidscheck: loop je niet weg tijdens het claimen?
+                if (map.distance(userMarker.getLatLng(), coords) > 25) { 
+                    clearInterval(itv); 
+                    alert("Interactie afgebroken: Je bent te ver weg gelopen!"); 
+                    updateGame(); 
+                }
+                
+                if (t <= 0) { 
+                    clearInterval(itv); 
+                    execute(id, act); 
+                }
+            }, 1000);
+        }
+
+        async function execute(id, act) {
+            const n = localStorage.getItem("tribe_player");
+            try {
+                const res = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&naam=${encodeURIComponent(n)}`);
+                const d = await res.json(); 
+                alert(d.msg); 
+                updateGame();
+            } catch(e) { alert("Fout bij uitvoeren actie."); }
+        }
+
+        // 4. GPS & KOMPAS LOGICA
+        function handleOrientation(e) {
+            let h = e.alpha; 
+            if (e.webkitCompassHeading) h = e.webkitCompassHeading;
+            if (userMarker && h !== undefined) userMarker.setRotationAngle(h);
+        }
+
+        function requestCompassPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(res => { 
+                    if (res == 'granted') window.addEventListener('deviceorientation', handleOrientation); 
+                });
+            } else { 
+                window.addEventListener('deviceorientation', handleOrientation); 
+            }
+        }
+
+        function locateUser() { map.locate({setView: true, maxZoom: 17}); }
+
+        map.on('locationfound', e => {
+            if (!userMarker) {
+                userMarker = L.marker(e.latlng, { 
+                    icon: L.divIcon({ 
+                        className: 'gps-arrow-icon', 
+                        html: '<div style="font-size: 35px; color: #007bff;">▲</div>',
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
+                    }), 
+                    rotationAngle: 0,
+                    rotationOrigin: 'center center'
+                }).addTo(map);
+            } else { 
+                userMarker.setLatLng(e.latlng); 
+            }
+        });
+
+        // 5. INITIALISATIE
+        window.onload = () => { 
+            updateGame(); 
+            setInterval(updateGame, 15000); // Elke 15 sec verversen
+            locateUser(); 
+        };
+    </script>
 </body>
 </html>
