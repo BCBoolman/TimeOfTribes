@@ -9,8 +9,6 @@
         /* --- BASIS STYLING --- */
         body { margin: 0; padding: 0; background: #f0f0f0; font-family: sans-serif; overflow: hidden; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
-        
-        /* Kaart is standaard (geen donker filter) voor leesbaarheid overdag */
         .leaflet-container { background: #fff !important; }
 
         /* --- UI ELEMENTEN --- */
@@ -36,43 +34,20 @@
             transition: all 0.1s ease;
         }
 
-        .game-btn:active {
-            background: #444;
-            transform: scale(0.95);
-        }
+        .game-btn:active { background: #444; transform: scale(0.95); }
 
         /* --- KAART ELEMENTEN STYLING --- */
-        .custom-div-icon { 
-            background: none !important; 
-            border: none !important; 
-            pointer-events: none; 
-        }
+        .custom-div-icon { background: none !important; border: none !important; pointer-events: none; }
 
-        /* De subtiele zwarte gloed achter de emoji-icoontjes voor contrast */
         .custom-div-icon div {
             font-size: 24px;
-            text-shadow: 
-                0px 0px 3px rgba(0,0,0,0.8),
-                0px 0px 5px rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            text-shadow: 0px 0px 3px rgba(0,0,0,0.8), 0px 0px 5px rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center;
         }
 
-        .leaflet-popup-content-wrapper { 
-            background: white; 
-            color: black; 
-            border-radius: 8px; 
-            font-size: 14px; 
-        }
+        .leaflet-popup-content-wrapper { background: white; color: black; border-radius: 8px; font-size: 14px; }
 
-        /* GPS Pijl styling met witte gloed */
-        .gps-arrow-icon {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            filter: drop-shadow(0 0 2px white);
-        }
+        .gps-arrow-icon { display: flex; justify-content: center; align-items: center; filter: drop-shadow(0 0 2px white); }
     </style>
 </head>
 <body>
@@ -111,31 +86,24 @@
         const locationLayer = L.layerGroup().addTo(map);
         let userMarker; 
 
-        // 1. KOMPAS & ORIËNTATIE
+        // 1. KOMPAS
         function handleOrientation(event) {
             let heading = event.alpha;
-            if (event.webkitCompassHeading) {
-                heading = event.webkitCompassHeading;
-            }
-            if (userMarker && heading !== undefined) {
-                userMarker.setRotationAngle(heading);
-            }
+            if (event.webkitCompassHeading) heading = event.webkitCompassHeading;
+            if (userMarker && heading !== undefined) userMarker.setRotationAngle(heading);
         }
 
         function requestCompassPermission() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response == 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        }
-                    }).catch(console.error);
+                    .then(response => { if (response == 'granted') window.addEventListener('deviceorientation', handleOrientation); })
+                    .catch(console.error);
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
             }
         }
 
-        // 2. GAME LOGICA & DATA
+        // 2. GAME LOGICA
         function getEmoji(omschrijving, type) {
             const tekst = (omschrijving + " " + type).toLowerCase();
             if (tekst.includes("voedsel") || tekst.includes("boerderij")) return "🌾";
@@ -150,7 +118,7 @@
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
 
-            // Haal locaties op
+            // Locaties + Volledige Pop-up data
             fetch(`${scriptURL}?action=getLocations&t=${Date.now()}`)
                 .then(r => r.json()).then(json => {
                     if(json.result === "success") {
@@ -159,17 +127,23 @@
                             const coords = loc.coords.split(',').map(c => parseFloat(c.trim()));
                             if(coords.length !== 2 || isNaN(coords[0])) return;
 
-                            const popupHTML = `<strong>${loc.omschrijving}</strong><br><small>${loc.type}</small>`;
+                            // HIER STAAT DE VOLLEDIGE INFO WEER TERUG
+                            const popupHTML = `
+                                <strong>${loc.omschrijving}</strong><br>
+                                <small>${loc.type}</small><hr>
+                                <b>Status:</b> ${loc.status}<br>
+                                <b>Team:</b> ${loc.eigenaar}
+                            `;
 
                             L.circle(coords, {
-                                radius: 25, color: loc.kleur, fillColor: loc.kleur, fillOpacity: 0.4, weight: 2
+                                radius: 25, color: loc.kleur, fillColor: loc.kleur, fillOpacity: 0.5, weight: 3
                             }).addTo(locationLayer).bindPopup(popupHTML);
 
                             L.marker(coords, {
                                 icon: L.divIcon({
                                     className: 'custom-div-icon',
                                     html: `<div>${getEmoji(loc.omschrijving, loc.type)}</div>`,
-                                    iconSize: [30, 30], iconAnchor: [15, 15]
+                                    iconSize: [32, 32], iconAnchor: [16, 16]
                                 }),
                                 interactive: false
                             }).addTo(locationLayer);
@@ -177,7 +151,7 @@
                     }
                 });
 
-            // Haal grondstoffen op
+            // Grondstoffen
             fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${Date.now()}`)
                 .then(r => r.json()).then(json => {
                     if(json.result === "success") {
@@ -186,28 +160,20 @@
                         document.getElementById('stone').innerText = json.data.stone;
                         document.getElementById('coins').innerText = json.data.coins;
                     }
-                })
-                .catch(err => console.error("Fout bij resources:", err));
+                });
         }
 
-        // 3. GPS FUNCTIES
-        function locateUser() {
-            map.locate({setView: true, maxZoom: 17});
-        }
+        function locateUser() { map.locate({setView: true, maxZoom: 17}); }
 
         map.on('locationfound', (e) => {
             if (!userMarker) {
-                const arrowIcon = L.divIcon({
-                    className: 'gps-arrow-icon',
-                    html: '<div style="font-size: 35px; color: #007bff;">▲</div>',
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 20]
-                });
-
                 userMarker = L.marker(e.latlng, {
-                    icon: arrowIcon,
-                    rotationAngle: 0,
-                    rotationOrigin: 'center center'
+                    icon: L.divIcon({
+                        className: 'gps-arrow-icon',
+                        html: '<div style="font-size: 35px; color: #007bff;">▲</div>',
+                        iconSize: [40, 40], iconAnchor: [20, 20]
+                    }),
+                    rotationAngle: 0, rotationOrigin: 'center center'
                 }).addTo(map);
                 userMarker.bindPopup("Jij bent hier").openPopup();
             } else {
