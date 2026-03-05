@@ -3,51 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Time of Tribes</title>
+    <title>Time of Tribes - Explorer</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* --- BASIS STYLING --- */
-        body { margin: 0; padding: 0; background: #000814; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; padding: 0; background: #f0f0f0; font-family: sans-serif; overflow: hidden; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
-        .leaflet-container { filter: grayscale(0.7) invert(0.9) hue-rotate(170deg) brightness(0.7) contrast(1.3); background: #000814 !important; }
+        
+        /* Kaart is nu standaard (geen donker filter meer) */
+        .leaflet-container { background: #fff !important; }
 
-        /* --- UI FEEDBACK & ANIMATIE --- */
+        /* --- UI ELEMENTEN --- */
         .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 12px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
         
         .game-btn { 
-            background: rgba(0, 0, 0, 0.75); 
-            border: 1px solid rgba(255, 255, 255, 0.2); 
-            color: #d1d1d1; 
+            background: rgba(0, 0, 0, 0.85); 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            color: #ffffff; 
             padding: 12px 5px; 
-            font-size: 0.7rem; 
+            font-size: 0.75rem; 
             text-transform: uppercase; 
             cursor: pointer; 
             flex: 1; 
             max-width: 110px; 
             text-align: center; 
             pointer-events: auto;
-            transition: all 0.1s ease; /* Feedback animatie */
+            border-radius: 4px;
+            transition: all 0.1s ease;
         }
 
-        /* Feedback bij indrukken knop */
         .game-btn:active {
-            background: rgba(255, 255, 255, 0.2);
+            background: #444;
             transform: scale(0.95);
-            color: #ffffff;
-            border-color: #ffffff;
         }
 
-        /* --- KAART ELEMENTEN FILTERS --- */
-        /* Draait het donkere filter terug voor emoji's en popups */
-        .custom-div-icon, .leaflet-popup-content-wrapper { 
-            filter: invert(1) hue-rotate(190deg) brightness(1.1); 
-        }
+        /* Icoon styling (geen filters meer nodig) */
         .custom-div-icon { background: none !important; border: none !important; pointer-events: none; }
         .leaflet-popup-content-wrapper { background: white; color: black; border-radius: 8px; font-size: 14px; }
 
-        /* --- GPS SPELD STYLING --- */
-        .gps-marker {
-            filter: none !important; /* GPS marker mag NIET geïnverteerd worden */
+        /* Pijl styling */
+        .gps-arrow-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: 0 0 3px white;
         }
 
         .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
@@ -74,24 +73,50 @@
     <div id="map"></div>
 
     <div class="game-ui-bottom">
-        <button class="game-btn" onclick="locateUser()">GPS</button>
+        <button class="game-btn" onclick="locateUser(); requestCompassPermission();">GPS</button>
         <button class="game-btn" onclick="window.location.href='handel.html'">Handel</button>
         <button class="game-btn" onclick="alert('Interactie geactiveerd!')">Interactie</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
+    
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbz6_tTDtYZAq0Ja5QSqjoO5p3WGEScaUW6MKcEdMtCt21xzeavL1SRLbJts7PRwOPbSMA/exec"; 
+        const scriptURL = "JOUW_GOOGLE_SCRIPT_URL"; 
 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.0907, 5.1214], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
         const locationLayer = L.layerGroup().addTo(map);
-        let userMarker; // De GPS-speld van de speler
+        let userMarker; 
 
-        /**
-         * FUNCTIE: Selecteert emoji op basis van kolom A en B.
-         */
+        // 1. KOMPAS LOGICA
+        function handleOrientation(event) {
+            let heading = event.alpha; // Android standaard
+            if (event.webkitCompassHeading) {
+                heading = event.webkitCompassHeading; // iOS standaard
+            }
+
+            if (userMarker && heading !== undefined) {
+                // We trekken de heading af of tellen op afhankelijk van de pijl-richting
+                userMarker.setRotationAngle(heading);
+            }
+        }
+
+        function requestCompassPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response == 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                        }
+                    }).catch(console.error);
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+
+        // 2. LOCATIE & GAME LOGICA
         function getEmoji(omschrijving, type) {
             const tekst = (omschrijving + " " + type).toLowerCase();
             if (tekst.includes("voedsel") || tekst.includes("boerderij")) return "🌾";
@@ -102,9 +127,6 @@
             return "📍";
         }
 
-        /**
-         * FUNCTIE: Kaart verversen en data ophalen.
-         */
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
@@ -117,71 +139,53 @@
                             const coords = loc.coords.split(',').map(c => parseFloat(c.trim()));
                             if(coords.length !== 2 || isNaN(coords[0])) return;
 
-                            const popupHTML = `
-                                <strong>${loc.omschrijving}</strong><br>
-                                <small>${loc.type}</small><hr>
-                                <b>Status:</b> ${loc.status}<br>
-                                <b>Team:</b> ${loc.eigenaar}
-                            `;
+                            const popupHTML = `<strong>${loc.omschrijving}</strong><br><small>${loc.type}</small>`;
 
-                            // Cirkel tekenen
                             L.circle(coords, {
-                                radius: 25, color: loc.kleur, fillColor: loc.kleur, fillOpacity: 0.5, weight: 3
+                                radius: 25, color: loc.kleur, fillColor: loc.kleur, fillOpacity: 0.4, weight: 2
                             }).addTo(locationLayer).bindPopup(popupHTML);
 
-                            // Icoon tekenen
                             L.marker(coords, {
                                 icon: L.divIcon({
                                     className: 'custom-div-icon',
-                                    html: `<div style="font-size:28px;">${getEmoji(loc.omschrijving, loc.type)}</div>`,
-                                    iconSize: [32, 32], iconAnchor: [16, 16]
+                                    html: `<div style="font-size:24px;">${getEmoji(loc.omschrijving, loc.type)}</div>`,
+                                    iconSize: [30, 30], iconAnchor: [15, 15]
                                 }),
                                 interactive: false
                             }).addTo(locationLayer);
                         });
                     }
                 });
-
-            // Grondstoffen balk verversen
-            fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}`)
-                .then(r => r.json()).then(json => {
-                    if(json.result === "success") {
-                        document.getElementById('food').innerText = json.data.food;
-                        document.getElementById('wood').innerText = json.data.wood;
-                        document.getElementById('stone').innerText = json.data.stone;
-                        document.getElementById('coins').innerText = json.data.coins;
-                    }
-                });
         }
 
-        /**
-         * FUNCTIE: GPS van speler vinden en marker tekenen/updaten.
-         */
         function locateUser() {
             map.locate({setView: true, maxZoom: 17});
         }
 
         map.on('locationfound', (e) => {
-            // Als de marker nog niet bestaat, maak hem aan met een felle blauwe kleur
             if (!userMarker) {
-                userMarker = L.circleMarker(e.latlng, {
-                    radius: 10,
-                    fillColor: "#007bff", // Fel blauw
-                    color: "white",
-                    weight: 3,
-                    fillOpacity: 1,
-                    className: 'gps-marker' // Zodat het filter niet werkt
+                const arrowIcon = L.divIcon({
+                    className: 'gps-arrow-icon',
+                    html: '<div style="font-size: 35px; color: #007bff; transform: rotate(0deg);">▲</div>',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+
+                userMarker = L.marker(e.latlng, {
+                    icon: arrowIcon,
+                    rotationAngle: 0,
+                    rotationOrigin: 'center center'
                 }).addTo(map);
-                userMarker.bindPopup("Jouw Locatie").openPopup();
+                userMarker.bindPopup("Jij bent hier").openPopup();
             } else {
-                userMarker.setLatLng(e.latlng); // Verplaats de bestaande marker
+                userMarker.setLatLng(e.latlng);
             }
         });
 
         window.onload = () => {
             updateGame();
             setInterval(updateGame, 20000); 
-            locateUser(); // Zoek speler direct bij start
+            locateUser();
         };
     </script>
 </body>
