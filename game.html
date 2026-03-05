@@ -10,10 +10,14 @@
         body { margin: 0; padding: 0; background: #f0f0f0; font-family: sans-serif; overflow: hidden; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
         
-        /* Kaart is nu standaard (geen donker filter meer) */
+        /* Kaart is standaard (geen donker filter) voor leesbaarheid overdag */
         .leaflet-container { background: #fff !important; }
 
         /* --- UI ELEMENTEN --- */
+        .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
+        .timer-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.9); padding: 10px 15px; color: white; pointer-events: auto; }
+        .resource-row { display: flex; justify-content: space-around; background: rgba(45,45,45,0.9); padding: 8px; color: #ddd; font-size: 0.85rem; pointer-events: auto; }
+
         .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 12px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
         
         .game-btn { 
@@ -37,41 +41,38 @@
             transform: scale(0.95);
         }
 
-/* --- KAART ELEMENTEN STYLING --- */
-.custom-div-icon { 
-    background: none !important; 
-    border: none !important; 
-    pointer-events: none; 
-}
+        /* --- KAART ELEMENTEN STYLING --- */
+        .custom-div-icon { 
+            background: none !important; 
+            border: none !important; 
+            pointer-events: none; 
+        }
 
-/* De subtiele zwarte gloed achter de emoji-icoontjes */
-.custom-div-icon div {
-    text-shadow: 
-        0px 0px 3px rgba(0,0,0,0.8),
-        0px 0px 5px rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+        /* De subtiele zwarte gloed achter de emoji-icoontjes voor contrast */
+        .custom-div-icon div {
+            font-size: 24px;
+            text-shadow: 
+                0px 0px 3px rgba(0,0,0,0.8),
+                0px 0px 5px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-.leaflet-popup-content-wrapper { 
-    background: white; 
-    color: black; 
-    border-radius: 8px; 
-    font-size: 14px; 
-}
+        .leaflet-popup-content-wrapper { 
+            background: white; 
+            color: black; 
+            border-radius: 8px; 
+            font-size: 14px; 
+        }
 
-/* Pijl styling (GPS) - Witte gloed voor contrast op de kaart */
-.gps-arrow-icon {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    filter: drop-shadow(0 0 2px white);
-}
-
-        .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
-        .timer-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.9); padding: 10px 15px; color: white; pointer-events: auto; }
-        .resource-row { display: flex; justify-content: space-around; background: rgba(45,45,45,0.9); padding: 8px; color: #ddd; font-size: 0.85rem; pointer-events: auto; }
+        /* GPS Pijl styling met witte gloed */
+        .gps-arrow-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0 0 2px white);
+        }
     </style>
 </head>
 <body>
@@ -110,15 +111,13 @@
         const locationLayer = L.layerGroup().addTo(map);
         let userMarker; 
 
-        // 1. KOMPAS LOGICA
+        // 1. KOMPAS & ORIËNTATIE
         function handleOrientation(event) {
-            let heading = event.alpha; // Android standaard
+            let heading = event.alpha;
             if (event.webkitCompassHeading) {
-                heading = event.webkitCompassHeading; // iOS standaard
+                heading = event.webkitCompassHeading;
             }
-
             if (userMarker && heading !== undefined) {
-                // We trekken de heading af of tellen op afhankelijk van de pijl-richting
                 userMarker.setRotationAngle(heading);
             }
         }
@@ -136,7 +135,7 @@
             }
         }
 
-        // 2. LOCATIE & GAME LOGICA
+        // 2. GAME LOGICA & DATA
         function getEmoji(omschrijving, type) {
             const tekst = (omschrijving + " " + type).toLowerCase();
             if (tekst.includes("voedsel") || tekst.includes("boerderij")) return "🌾";
@@ -151,6 +150,7 @@
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
 
+            // Haal locaties op
             fetch(`${scriptURL}?action=getLocations&t=${Date.now()}`)
                 .then(r => r.json()).then(json => {
                     if(json.result === "success") {
@@ -168,7 +168,7 @@
                             L.marker(coords, {
                                 icon: L.divIcon({
                                     className: 'custom-div-icon',
-                                    html: `<div style="font-size:24px;">${getEmoji(loc.omschrijving, loc.type)}</div>`,
+                                    html: `<div>${getEmoji(loc.omschrijving, loc.type)}</div>`,
                                     iconSize: [30, 30], iconAnchor: [15, 15]
                                 }),
                                 interactive: false
@@ -176,8 +176,21 @@
                         });
                     }
                 });
+
+            // Haal grondstoffen op
+            fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${Date.now()}`)
+                .then(r => r.json()).then(json => {
+                    if(json.result === "success") {
+                        document.getElementById('food').innerText = json.data.food;
+                        document.getElementById('wood').innerText = json.data.wood;
+                        document.getElementById('stone').innerText = json.data.stone;
+                        document.getElementById('coins').innerText = json.data.coins;
+                    }
+                })
+                .catch(err => console.error("Fout bij resources:", err));
         }
 
+        // 3. GPS FUNCTIES
         function locateUser() {
             map.locate({setView: true, maxZoom: 17});
         }
@@ -186,7 +199,7 @@
             if (!userMarker) {
                 const arrowIcon = L.divIcon({
                     className: 'gps-arrow-icon',
-                    html: '<div style="font-size: 35px; color: #007bff; transform: rotate(0deg);">▲</div>',
+                    html: '<div style="font-size: 35px; color: #007bff;">▲</div>',
                     iconSize: [40, 40],
                     iconAnchor: [20, 20]
                 });
