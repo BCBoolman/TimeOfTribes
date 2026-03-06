@@ -16,13 +16,12 @@
         .btn-interact { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-interact:disabled { background: #4b5563; color: #9ca3af; }
         
-        /* Verbeterde Icoontjes Styling */
         .custom-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px !important; height: 50px !important; }
         .map-emoji { font-size: 28px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); line-height: 1; }
         .warning-blink { animation: blinker 0.8s linear infinite; color: #ff4444; font-weight: bold; font-size: 24px; filter: drop-shadow(0px 0px 3px black); margin-bottom: -5px; }
         @keyframes blinker { 50% { opacity: 0; } }
         
-        .cycle-timer { color: #f87171; font-family: monospace; font-weight: bold; }
+        .day-timer { color: #facc15; font-family: monospace; font-weight: bold; }
         .popup-content { text-align: center; color: #333; min-width: 150px; }
     </style>
 </head>
@@ -31,7 +30,7 @@
     <div class="game-ui-top">
         <div class="timer-row">
             <div>⏱️ <span id="gameClock">00:00:00</span></div>
-            <div>📉 Cyclus: <span id="cycleTimer" class="cycle-timer">15:00</span></div>
+            <div>☀️ Dag: <span id="dayTimer" class="day-timer">15:00</span></div>
         </div>
         <div class="resource-row">
             <div>🌾 <span id="food">0</span></div> <div>🪵 <span id="wood">0</span></div>
@@ -55,24 +54,57 @@
         
         let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null;
 
+        // STARTUP
         async function fetchStartTime() {
-            const r = await fetch(`${scriptURL}?action=getStartTime`);
-            const d = await r.json();
-            gameStartTime = d.startTime;
-            setInterval(updateClocks, 1000);
+            try {
+                const r = await fetch(`${scriptURL}?action=getStartTime`);
+                const d = await r.json();
+                gameStartTime = d.startTime;
+                // De timer wordt hier geforceerd gestart
+                requestAnimationFrame(updateClocks);
+            } catch(e) { console.error("Kon starttijd niet ophalen"); }
         }
 
+        // DE TIJD LOGICA (Herwerkt voor stabiliteit)
         function updateClocks() {
-            if (!gameStartTime) return;
-            const nu = Date.now(), diff = nu - gameStartTime;
-            if (diff < 0) return;
-            const h = Math.floor(diff/3600000).toString().padStart(2,'0'), m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0'), s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
-            document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
-            const cycMs = 15*60*1000, over = cycMs-(diff%cycMs), cM = Math.floor(over/60000).toString().padStart(2,'0'), cS = Math.floor((over%60000)/1000).toString().padStart(2,'0');
-            document.getElementById('cycleTimer').innerText = `${cM}:${cS}`;
-            if (cM == "00" && cS == "01") setTimeout(updateGame, 1500);
+            if (!gameStartTime) {
+                requestAnimationFrame(updateClocks);
+                return;
+            }
+
+            const nu = Date.now();
+            const diff = nu - gameStartTime;
+
+            if (diff >= 0) {
+                // 1. Totaal (HH:MM:SS)
+                const h = Math.floor(diff/3600000).toString().padStart(2,'0');
+                const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+                const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+                document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
+
+                // 2. Dag Timer (15:00 -> 00:00)
+                const cycMs = 15 * 60 * 1000;
+                const msInCyclus = diff % cycMs;
+                const resterendMs = cycMs - msInCyclus;
+                
+                const dm = Math.floor(resterendMs / 60000).toString().padStart(2,'0');
+                const ds = Math.floor((resterendMs % 60000) / 1000).toString().padStart(2,'0');
+                document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
+
+                // Resource update trigger op 00:00
+                if (dm == "00" && ds == "00") {
+                    // Kort wachten om server tijd te geven voor verwerking
+                    setTimeout(updateGame, 2000);
+                }
+            } else {
+                document.getElementById('gameClock').innerText = "WACHTEN";
+            }
+
+            // Gebruik requestAnimationFrame voor soepelere timers die niet stoppen
+            setTimeout(() => requestAnimationFrame(updateClocks), 1000);
         }
 
+        // INTERACTIE
         async function startInteract(id, act, duration, coords) {
             const endTimestamp = Date.now() + (duration * 1000);
             localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
@@ -87,10 +119,16 @@
             isInteracting = true;
             const { id, act, endTimestamp, coords } = JSON.parse(data);
             const nu = Date.now(), over = Math.ceil((endTimestamp - nu) / 1000);
+            
             if (over <= 0) { finishInteract(id, act); return; }
             if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) { stopInteractRemote(id, "Buiten bereik!"); return; }
+            
             const btn = document.getElementById(`btn-${id}`);
-            if (btn) { btn.disabled = true; btn.innerText = `BEZIG... ${over}s`; btn.style.background = "#d97706"; }
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = `BEZIG... ${over}s`;
+                btn.style.background = "#d97706";
+            }
             setTimeout(runTimerCycle, 1000);
         }
 
@@ -112,12 +150,17 @@
             updateGame();
         }
 
+        // KAART & DATA
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
             try {
-                const [rRes, lRes] = await Promise.all([fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}`), fetch(`${scriptURL}?action=getLocations`)]);
+                const [rRes, lRes] = await Promise.all([
+                    fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}`),
+                    fetch(`${scriptURL}?action=getLocations`)
+                ]);
                 const rData = await rRes.json(), lData = await lRes.json();
+                
                 if(rData.result === "success") {
                     document.getElementById('food').innerText = rData.data.food;
                     document.getElementById('wood').innerText = rData.data.wood;
@@ -125,6 +168,7 @@
                     document.getElementById('coins').innerText = rData.data.coins;
                     userTeam = rData.data.team;
                 }
+                
                 locationLayer.clearLayers();
                 lData.data.forEach(loc => {
                     const coords = loc.coords.split(',').map(Number);
@@ -161,10 +205,7 @@
 
                     const popupHTML = `<div class="popup-content">${loc.status!=="ok"?`<b style="color:red">⚠️ ${loc.status.toUpperCase()}</b><br>`:""}<b>${loc.locatie}</b><br><small>${loc.type}</small><hr><span style="font-size:0.75rem;">${cost}</span><button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${dist>25||act===""?'disabled':''}>${dist<=25?btnTxt:"Te ver weg"}</button></div>`;
 
-                    // DE CIRKEL (NU KLIKBAAR GEMAAKT)
-                    const circle = L.circle(coords, { radius: 25, color: loc.kleur, fillOpacity: 0.3, interactive: true }).addTo(locationLayer).bindPopup(popupHTML);
-                    
-                    // HET ICOONTJE (GEEN INTERACTIE NODIG, CIRKEL REGELT HET)
+                    L.circle(coords, { radius: 25, color: loc.kleur, fillOpacity: 0.3, interactive: true }).addTo(locationLayer).bindPopup(popupHTML);
                     const iconHtml = `<div class="custom-icon-container">${loc.status!=="ok"?`<div class="warning-blink">⚠️</div>`:""}<div class="map-emoji">${emoji}</div></div>`;
                     L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: iconHtml, iconSize: [50, 50], iconAnchor: [25, 25] }), interactive: false }).addTo(locationLayer);
                     
