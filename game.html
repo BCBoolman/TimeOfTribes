@@ -196,7 +196,7 @@
 
                     const popupHTML = `<div class="popup-content">${loc.status!=="ok"?`<b style="color:red">⚠️ ${loc.status.toUpperCase()}</b><br>`:""}<b>${loc.locatie}</b><br><small>${loc.type}</small><hr><span style="font-size:0.75rem;">${cost}</span><button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${dist>25||act===""?'disabled':''}>${dist<=25?btnTxt:"Te ver weg"}</button></div>`;
 
-                    L.circle(coords, { radius: 25, color: loc.kleur, fillOpacity: 0.3, interactive: true }).addTo(locationLayer).bindPopup(popupHTML);
+                    L.circle(coords, { radius: 15, color: loc.kleur, fillOpacity: 0.3, interactive: true }).addTo(locationLayer).bindPopup(popupHTML);
                     const iconHtml = `<div class="custom-icon-container">${loc.status!=="ok"?`<div class="warning-blink">⚠️</div>`:""}<div class="map-emoji">${emoji}</div></div>`;
                     L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: iconHtml, iconSize: [50, 50], iconAnchor: [25, 25] }), interactive: false }).addTo(locationLayer);
                     markersRef[loc.id] = { coords };
@@ -207,14 +207,14 @@
         function autoOpenInteract() {
             if (!userMarker) return;
             for (let id in markersRef) {
-                if (map.distance(userMarker.getLatLng(), markersRef[id].coords) <= 25) {
+                if (map.distance(userMarker.getLatLng(), markersRef[id].coords) <= 15) {
                     locationLayer.eachLayer(l => { if(l.getPopup && l.getLatLng().equals(markersRef[id].coords)) l.openPopup(); });
                     return;
                 }
             }
         }
 
-        function locateUser() { map.locate({setView: true, maxZoom: 17}); }
+        function locateUser() { map.locate({setView: true, maxZoom: 10}); }
         map.on('locationfound', e => {
             if (!userMarker) userMarker = L.marker(e.latlng).addTo(map);
             else userMarker.setLatLng(e.latlng);
