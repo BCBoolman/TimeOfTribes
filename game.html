@@ -3,234 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Time of Tribes - Kaart</title>
+    <title>Time of Tribes</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; background: #f0f0f0; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; padding: 0; background: #1a1a1a; font-family: sans-serif; overflow: hidden; color: white; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
-        
-        /* UI Top */
         .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
-        .timer-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.9); padding: 10px 15px; color: white; pointer-events: auto; }
-        .resource-row { display: flex; justify-content: space-around; background: rgba(45,45,45,0.9); padding: 8px; color: #ddd; font-size: 0.85rem; pointer-events: auto; }
-        
-        /* UI Bottom */
-        .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 12px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
-        .game-btn { background: rgba(0,0,0,0.85); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 12px 5px; font-size: 0.75rem; text-transform: uppercase; border-radius: 4px; flex: 1; cursor: pointer; pointer-events: auto; }
-        
-        /* Markers & Icons */
-        .custom-div-icon div { font-size: 24px; text-shadow: 0px 0px 3px rgba(0,0,0,0.8), 0px 0px 5px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-        .gps-arrow-icon { display: flex; justify-content: center; align-items: center; filter: drop-shadow(0 0 2px white); }
-        
-        /* Popup Styling */
-        .btn-interact { background: #007bff; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; margin-top: 8px; font-weight: bold; cursor: pointer; }
-        .btn-interact:disabled { background: #888; cursor: not-allowed; }
-        .cost-tag { font-size: 0.75rem; color: #666; display: block; margin-top: 4px; font-style: italic; }
-        hr { border: 0; border-top: 1px solid #eee; margin: 10px 0; }
+        .timer-row { display: flex; justify-content: space-between; background: rgba(0,0,0,0.9); padding: 12px; border-bottom: 1px solid #444; pointer-events: auto; }
+        .resource-row { display: flex; justify-content: space-around; background: rgba(30,30,30,0.9); padding: 8px; color: #fbbf24; pointer-events: auto; font-size: 0.9rem; font-weight: bold; }
+        .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 10px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
+        .game-btn { background: #333; color: white; border: 1px solid #555; padding: 14px; border-radius: 8px; flex: 1; font-weight: bold; pointer-events: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .btn-interact { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-interact:disabled { background: #4b5563; color: #9ca3af; }
+        .warning-blink { animation: blinker 0.8s linear infinite; color: #ff4444; font-weight: bold; font-size: 22px; text-shadow: 0 0 5px black; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        .cycle-timer { color: #f87171; font-family: monospace; font-weight: bold; }
+        .custom-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .popup-content { text-align: center; color: #333; min-width: 150px; }
     </style>
 </head>
 <body>
 
     <div class="game-ui-top">
         <div class="timer-row">
-            <div>☀️ <span id="dayTimer">15:00</span></div>
-            <div style="font-weight: bold;">VERKENNING</div>
-            <div>⏳ <span id="playTimer">02:00:00</span></div>
+            <div>⏱️ <span id="gameClock">00:00:00</span></div>
+            <div>📉 Cyclus: <span id="cycleTimer" class="cycle-timer">15:00</span></div>
         </div>
         <div class="resource-row">
-            <div>🌾 <span id="food">0</span></div>
-            <div>🪵 <span id="wood">0</span></div>
-            <div>🪨 <span id="stone">0</span></div>
-            <div>💰 <span id="coins">0</span></div>
+            <div>🌾 <span id="food">0</span></div> <div>🪵 <span id="wood">0</span></div>
+            <div>🪨 <span id="stone">0</span></div> <div>💰 <span id="coins">0</span></div>
         </div>
     </div>
 
     <div id="map"></div>
 
     <div class="game-ui-bottom">
-        <button class="game-btn" onclick="locateUser(); requestCompassPermission();">GPS</button>
-        <button class="game-btn" onclick="window.location.href='handel.html'">Handel</button>
-        <button class="game-btn" onclick="autoOpenInteract()">Interactie</button>
+        <button class="game-btn" onclick="locateUser()">GPS</button>
+        <button class="game-btn" onclick="autoOpenInteract()">INTERACTIE</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
-    
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbwH26xTaurw1bWHZdY1KCT3rhjq29KtU1bUdsnToeMYt6o5W4CuUvjpfFP4UQOTn3ZRNg/exec"; 
-
+        const scriptURL = "https://script.google.com/macros/s/AKfycbz9zDhBzRF9F3rGtCKn0vz-rxC5iMZaSiz7ciNSZ1FLiuJ00uUNRfzmOqfOrCzVYv79Ow/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         const locationLayer = L.layerGroup().addTo(map);
         
-        let userMarker; 
-        let userTeam = "";
-        let markersRef = {}; // Om markers makkelijk terug te vinden
+        let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null;
 
-        function getEmoji(n) {
-            const l = n.toLowerCase();
-            if (l.includes("voedsel")) return "🌾";
-            if (l.includes("hout")) return "🪵";
-            if (l.includes("steen")) return "🪨";
-            return "🏰";
+        // 1. Klok & Cyclus Logica
+        async function fetchStartTime() {
+            const r = await fetch(`${scriptURL}?action=getStartTime`);
+            const d = await r.json();
+            gameStartTime = d.startTime;
+            setInterval(updateClocks, 1000);
         }
 
+        function updateClocks() {
+            if (!gameStartTime) return;
+            const nu = Date.now();
+            const diff = nu - gameStartTime;
+            if (diff < 0) return;
+
+            // Speltijd
+            const h = Math.floor(diff/3600000).toString().padStart(2,'0');
+            const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+            const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+            document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
+
+            // 15-minuten Cyclus
+            const cycMs = 15 * 60 * 1000;
+            const over = cycMs - (diff % cycMs);
+            const cM = Math.floor(over/60000).toString().padStart(2,'0');
+            const cS = Math.floor((over%60000)/1000).toString().padStart(2,'0');
+            document.getElementById('cycleTimer').innerText = `${cM}:${cS}`;
+            
+            if (cM == "00" && cS == "01") setTimeout(updateGame, 1500);
+        }
+
+        // 2. Interactie & Achtergrond Timer
+        async function startInteract(id, act, duration, coords) {
+            const endTimestamp = Date.now() + (duration * 1000);
+            localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
+            await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}`);
+            runTimerCycle();
+            updateGame();
+        }
+
+        function runTimerCycle() {
+            const data = localStorage.getItem('activeInteract');
+            if (!data) { isInteracting = false; return; }
+            isInteracting = true;
+
+            const { id, act, endTimestamp, coords } = JSON.parse(data);
+            const nu = Date.now();
+            const over = Math.ceil((endTimestamp - nu) / 1000);
+
+            if (over <= 0) {
+                finishInteract(id, act);
+                return;
+            }
+
+            if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
+                stopInteractRemote(id, "Buiten bereik!");
+                return;
+            }
+
+            const btn = document.getElementById(`btn-${id}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = `BEZIG... ${over}s`;
+                btn.style.background = "#d97706";
+            }
+            setTimeout(runTimerCycle, 1000);
+        }
+
+        async function stopInteractRemote(id, msg) {
+            localStorage.removeItem('activeInteract');
+            isInteracting = false;
+            alert(msg);
+            await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
+            updateGame();
+        }
+
+        async function finishInteract(id, act) {
+            localStorage.removeItem('activeInteract');
+            isInteracting = false;
+            const speler = localStorage.getItem("tribe_player");
+            const r = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&naam=${encodeURIComponent(speler)}`);
+            const d = await r.json();
+            alert(d.msg);
+            updateGame();
+        }
+
+        // 3. Kaart Updates
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
+            try {
+                const [rRes, lRes] = await Promise.all([
+                    fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}`),
+                    fetch(`${scriptURL}?action=getLocations`)
+                ]);
+                const rData = await rRes.json();
+                const lData = await lRes.json();
 
-            const r = await fetch(`${scriptURL}?action=getResources&naam=${encodeURIComponent(naam)}&t=${Date.now()}`);
-            const rData = await r.json();
-            if(rData.result === "success") {
-                document.getElementById('food').innerText = rData.data.food;
-                document.getElementById('wood').innerText = rData.data.wood;
-                document.getElementById('stone').innerText = rData.data.stone;
-                document.getElementById('coins').innerText = rData.data.coins;
-                userTeam = rData.data.team;
-            }
-
-            const lRes = await fetch(`${scriptURL}?action=getLocations&t=${Date.now()}`);
-            const lData = await lRes.json();
-            locationLayer.clearLayers();
-            markersRef = {};
-
-            lData.data.forEach(loc => {
-                const coords = loc.coords.split(',').map(Number);
-                const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
-                const binnen = dist <= 25;
-
-                let btnTxt = ""; let costTxt = ""; let act = ""; let time = 0;
-                const eigenaarSchoon = loc.eigenaar.toLowerCase().trim();
-                const teamSchoon = userTeam.toLowerCase().trim();
-
-                if (eigenaarSchoon === "geen") {
-                    btnTxt = "Claim Locatie"; costTxt = "Kosten: 75 🌾, 75 🪵, 75 🪨"; act = "claim"; time = 30;
-                } else if (eigenaarSchoon === teamSchoon) {
-                    if (loc.type.toLowerCase() === "standaard") {
-                        btnTxt = "Upgrade: Gewapende Arbeiders"; costTxt = "Kosten: 50 🌾, 50 💰"; act = "upgrade";
-                    } else if (loc.type === "Gewapende Arbeiders") {
-                        btnTxt = "Upgrade: Buitenpost"; costTxt = "Kosten: 75 🪵, 75 🪨"; act = "upgrade";
-                    } else {
-                        btnTxt = "Maximaal Niveau"; act = ""; costTxt = "Deze mijn is volledig verbeterd.";
-                    }
-                } else {
-                    btnTxt = "Val aan"; costTxt = "Kosten: 75 💰"; act = "attack";
-                    time = (loc.type === "Gewapende Arbeiders") ? 135 : (loc.type === "Buitenpost") ? 180 : 90;
+                if(rData.result === "success") {
+                    document.getElementById('food').innerText = rData.data.food;
+                    document.getElementById('wood').innerText = rData.data.wood;
+                    document.getElementById('stone').innerText = rData.data.stone;
+                    document.getElementById('coins').innerText = rData.data.coins;
+                    userTeam = rData.data.team;
                 }
 
-                const popupHTML = `
-                    <div style="text-align:center;" id="pop-${loc.id}">
-                        <strong style="font-size:16px;">${loc.locatie}</strong><br>
-                        <small>Team: ${loc.eigenaar}</small>
-                        <hr>
-                        <span class="cost-tag" id="cost-${loc.id}">${costTxt}</span>
-                        <button class="btn-interact" ${(!binnen || act==="")?'disabled':''} id="btn-${loc.id}" 
-                        onclick="startInteract(${loc.id},'${act}',${time},[${coords}])">
-                            ${binnen ? btnTxt : "Te ver weg (" + Math.round(dist) + "m)"}
-                        </button>
-                    </div>`;
+                locationLayer.clearLayers();
+                lData.data.forEach(loc => {
+                    const coords = loc.coords.split(',').map(Number);
+                    const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
+                    const isOwner = loc.eigenaar.toLowerCase() === userTeam.toLowerCase();
+                    const isBasis = loc.locatie.toLowerCase().includes("basis");
+                    
+                    let emoji = loc.locatie.toLowerCase().includes("hout") ? "🪵" : loc.locatie.toLowerCase().includes("steen") ? "🪨" : loc.locatie.toLowerCase().includes("voedsel") ? "🌾" : "🏰";
+                    let statusHtml = (loc.status !== "ok") ? `<div class="warning-blink">⚠️</div>` : "";
 
-                const circle = L.circle(coords, { radius: 25, color: loc.kleur, fillColor: loc.kleur, fillOpacity: 0.4, weight: 3 }).addTo(locationLayer).bindPopup(popupHTML);
-                L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html:`<div>${getEmoji(loc.locatie)}</div>` }), interactive: false }).addTo(locationLayer);
-                
-                markersRef[loc.id] = { circle: circle, coords: coords, binnen: binnen };
-            });
-        }
-
-        // NIEUW: Automatisch pop-up openen van de dichtstbijzijnde mijn
-        function autoOpenInteract() {
-            if (!userMarker) { alert("GPS positie nog niet bekend."); return; }
-            let dichtstbijzijnde = null;
-            let minAfstand = 25; // Alleen binnen 25 meter
-
-            for (let id in markersRef) {
-                let d = map.distance(userMarker.getLatLng(), markersRef[id].coords);
-                if (d < minAfstand) {
-                    minAfstand = d;
-                    dichtstbijzijnde = markersRef[id].circle;
-                }
-            }
-
-            if (dichtstbijzijnde) {
-                dichtstbijzijnde.openPopup();
-            } else {
-                alert("Je staat niet dicht genoeg bij een locatie.");
-            }
-        }
-
-        // NIEUW: Live afstandscontrole terwijl pop-up open is
-        function liveCheck() {
-            if (!userMarker) return;
-            for (let id in markersRef) {
-                let btn = document.getElementById(`btn-${id}`);
-                if (btn && !btn.innerText.includes("Bezig")) {
-                    let d = map.distance(userMarker.getLatLng(), markersRef[id].coords);
-                    if (d > 25) {
-                        btn.disabled = true;
-                        btn.innerText = "Te ver weg (" + Math.round(d) + "m)";
+                    let btnTxt = "N/A", time = 0, act = "", cost = "";
+                    if (isBasis) {
+                        if (isOwner) {
+                            act = "upgrade";
+                            if (loc.type === "standaard") { btnTxt = "Wachtposten"; cost = "100🪵, 50🪨"; }
+                            else if (loc.type === "Wachtposten") { btnTxt = "Palissade"; cost = "150🪵, 150🪨"; }
+                            else if (loc.type === "Palissademuur") { btnTxt = "Fortificatie"; cost = "200🪵, 200🪨, 100💰"; }
+                            else { btnTxt = "MAX"; act = ""; }
+                        } else {
+                            act = "attack"; btnTxt = "Aanvallen"; cost = "150💰";
+                            const tijden = { "standaard": 150, "Wachtposten": 225, "Palissademuur": 300, "Fortificaties": 450 };
+                            time = tijden[loc.type] || 150;
+                        }
                     } else {
-                        // Alleen re-enablen als de locatie niet op "Maximaal" staat
-                        if (!btn.innerText.includes("Maximaal")) {
-                            btn.disabled = false;
-                            // Hier laten we de tekst even generiek of herladen via updateGame
+                        if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Bouwen"; cost = "75V, 75H, 75S"; time = 30; }
+                        else if (isOwner) {
+                            act = "upgrade";
+                            if (loc.type === "standaard") { btnTxt = "Arbeiders"; cost = "50V, 50💰"; }
+                            else if (loc.type === "Gewapende Arbeiders") { btnTxt = "Buitenpost"; cost = "75H, 75S"; }
+                            else { btnTxt = "MAX"; act = ""; }
+                        } else {
+                            act = "attack"; btnTxt = "Veroveren"; cost = "75💰";
+                            time = (loc.type === "Gewapende Arbeiders") ? 135 : (loc.type === "Buitenpost") ? 180 : 90;
                         }
                     }
+
+                    const popupHTML = `
+                        <div class="popup-content">
+                            ${loc.status !== "ok" ? `<b style="color:red">⚠️ ${loc.status.toUpperCase()}</b><br>` : ""}
+                            <b>${loc.locatie}</b><br><small>${loc.type}</small><hr>
+                            <span style="font-size:0.75rem;">${cost}</span>
+                            <button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" 
+                                ${dist > 25 || act === "" ? 'disabled' : ''}>
+                                ${dist <= 25 ? btnTxt : "Te ver weg"}
+                            </button>
+                        </div>`;
+
+                    L.circle(coords, { radius: 25, color: loc.kleur, fillOpacity: 0.3 }).addTo(locationLayer);
+                    L.marker(coords, { icon: L.divIcon({ className:'custom-icon', html:`${statusHtml}<div>${emoji}</div>` }) })
+                        .addTo(locationLayer).bindPopup(popupHTML);
+                    markersRef[loc.id] = { coords };
+                });
+            } catch(e) {}
+        }
+
+        function autoOpenInteract() {
+            if (!userMarker) return;
+            for (let id in markersRef) {
+                if (map.distance(userMarker.getLatLng(), markersRef[id].coords) <= 25) {
+                    locationLayer.eachLayer(l => { if(l.getPopup && l.getLatLng().equals(markersRef[id].coords)) l.openPopup(); });
+                    return;
                 }
             }
-        }
-
-        function startInteract(id, act, time, coords) {
-            if (time === 0) { execute(id, act); return; }
-            let t = time; 
-            const btn = document.getElementById(`btn-${id}`); 
-            btn.disabled = true;
-            
-            const itv = setInterval(() => {
-                t--; btn.innerText = `Bezig... (${t}s)`;
-                if (map.distance(userMarker.getLatLng(), coords) > 25) { 
-                    clearInterval(itv); alert("Interactie afgebroken: Je bent te ver weg gelopen!"); updateGame(); 
-                }
-                if (t <= 0) { clearInterval(itv); execute(id, act); }
-            }, 1000);
-        }
-
-        async function execute(id, act) {
-            const n = localStorage.getItem("tribe_player");
-            try {
-                const res = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&naam=${encodeURIComponent(n)}`);
-                const d = await res.json(); 
-                alert(d.msg); 
-                updateGame();
-            } catch(e) { alert("Fout bij uitvoeren actie."); }
-        }
-
-        function handleOrientation(e) {
-            let h = e.alpha; if (e.webkitCompassHeading) h = e.webkitCompassHeading;
-            if (userMarker && h !== undefined) userMarker.setRotationAngle(h);
-        }
-
-        function requestCompassPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(res => { if (res == 'granted') window.addEventListener('deviceorientation', handleOrientation); });
-            } else { window.addEventListener('deviceorientation', handleOrientation); }
         }
 
         function locateUser() { map.locate({setView: true, maxZoom: 17}); }
-
         map.on('locationfound', e => {
-            if (!userMarker) {
-                userMarker = L.marker(e.latlng, { 
-                    icon: L.divIcon({ className: 'gps-arrow-icon', html: '<div style="font-size: 35px; color: #007bff;">▲</div>', iconSize: [40, 40], iconAnchor: [20, 20] }), 
-                    rotationAngle: 0, rotationOrigin: 'center center'
-                }).addTo(map);
-            } else { userMarker.setLatLng(e.latlng); }
+            if (!userMarker) userMarker = L.marker(e.latlng).addTo(map);
+            else userMarker.setLatLng(e.latlng);
         });
 
-        window.onload = () => { 
-            updateGame(); 
-            setInterval(updateGame, 20000); 
-            setInterval(liveCheck, 1000); // Elke seconde checken of speler wegloopt
-            locateUser(); 
+        window.onload = () => {
+            fetchStartTime();
+            updateGame();
+            setInterval(updateGame, 20000);
+            if (localStorage.getItem('activeInteract')) runTimerCycle();
+            locateUser();
         };
     </script>
 </body>
