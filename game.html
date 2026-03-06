@@ -16,6 +16,7 @@
         .btn-interact { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-interact:disabled { background: #4b5563; color: #9ca3af; }
         
+        /* Icoontjes styling */
         .custom-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px !important; height: 50px !important; }
         .map-emoji { font-size: 28px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); line-height: 1; }
         .warning-blink { animation: blinker 0.8s linear infinite; color: #ff4444; font-weight: bold; font-size: 24px; filter: drop-shadow(0px 0px 3px black); margin-bottom: -5px; }
@@ -47,64 +48,58 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbz9zDhBzRF9F3rGtCKn0vz-rxC5iMZaSiz7ciNSZ1FLiuJ00uUNRfzmOqfOrCzVYv79Ow/exec"; 
+        const scriptURL = "https://script.google.com/macros/s/AKfycbyETATvDGiT_akRqL-R9GTjdjiEWbkE2c8TVWOJKJab7NxyQKPAdfJmxx8uElvHiYjyOw/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         const locationLayer = L.layerGroup().addTo(map);
         
         let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null;
 
-        // STARTUP
+        // --- TIJD EN HEARTBEAT ---
         async function fetchStartTime() {
             try {
                 const r = await fetch(`${scriptURL}?action=getStartTime`);
                 const d = await r.json();
                 gameStartTime = d.startTime;
-                // De timer wordt hier geforceerd gestart
-                requestAnimationFrame(updateClocks);
-            } catch(e) { console.error("Kon starttijd niet ophalen"); }
+                console.log("Starttijd geladen:", gameStartTime);
+                heartbeat();
+            } catch(e) {
+                console.error("Fout bij laden starttijd, retry over 5s...");
+                setTimeout(fetchStartTime, 5000);
+            }
         }
 
-        // DE TIJD LOGICA (Herwerkt voor stabiliteit)
-        function updateClocks() {
-            if (!gameStartTime) {
-                requestAnimationFrame(updateClocks);
-                return;
-            }
+        function heartbeat() {
+            updateClocks();
+            setTimeout(heartbeat, 1000);
+        }
 
+        function updateClocks() {
+            if (!gameStartTime) return;
             const nu = Date.now();
             const diff = nu - gameStartTime;
 
-            if (diff >= 0) {
-                // 1. Totaal (HH:MM:SS)
-                const h = Math.floor(diff/3600000).toString().padStart(2,'0');
-                const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
-                const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
-                document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
+            // Totale looptijd
+            const absDiff = Math.abs(diff);
+            const h = Math.floor(absDiff / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((absDiff % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((absDiff % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('gameClock').innerText = (diff < 0 ? "-" : "") + `${h}:${m}:${s}`;
 
-                // 2. Dag Timer (15:00 -> 00:00)
-                const cycMs = 15 * 60 * 1000;
-                const msInCyclus = diff % cycMs;
-                const resterendMs = cycMs - msInCyclus;
-                
-                const dm = Math.floor(resterendMs / 60000).toString().padStart(2,'0');
-                const ds = Math.floor((resterendMs % 60000) / 1000).toString().padStart(2,'0');
-                document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
+            // Dag-timer (15:00 naar 00:00)
+            const cycMs = 15 * 60 * 1000;
+            const msInCyc = absDiff % cycMs;
+            const restMs = cycMs - msInCyc;
+            const dm = Math.floor(restMs / 60000).toString().padStart(2, '0');
+            const ds = Math.floor((restMs % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
 
-                // Resource update trigger op 00:00
-                if (dm == "00" && ds == "00") {
-                    // Kort wachten om server tijd te geven voor verwerking
-                    setTimeout(updateGame, 2000);
-                }
-            } else {
-                document.getElementById('gameClock').innerText = "WACHTEN";
+            if (dm === "00" && ds === "00" && diff > 0) {
+                setTimeout(updateGame, 1500);
             }
-
-            // Gebruik requestAnimationFrame voor soepelere timers die niet stoppen
-            setTimeout(() => requestAnimationFrame(updateClocks), 1000);
         }
 
-        // INTERACTIE
+        // --- INTERACTIE ---
         async function startInteract(id, act, duration, coords) {
             const endTimestamp = Date.now() + (duration * 1000);
             localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
@@ -119,10 +114,8 @@
             isInteracting = true;
             const { id, act, endTimestamp, coords } = JSON.parse(data);
             const nu = Date.now(), over = Math.ceil((endTimestamp - nu) / 1000);
-            
             if (over <= 0) { finishInteract(id, act); return; }
             if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) { stopInteractRemote(id, "Buiten bereik!"); return; }
-            
             const btn = document.getElementById(`btn-${id}`);
             if (btn) {
                 btn.disabled = true;
@@ -150,7 +143,7 @@
             updateGame();
         }
 
-        // KAART & DATA
+        // --- GAME DATA ---
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
@@ -160,7 +153,6 @@
                     fetch(`${scriptURL}?action=getLocations`)
                 ]);
                 const rData = await rRes.json(), lData = await lRes.json();
-                
                 if(rData.result === "success") {
                     document.getElementById('food').innerText = rData.data.food;
                     document.getElementById('wood').innerText = rData.data.wood;
@@ -168,7 +160,6 @@
                     document.getElementById('coins').innerText = rData.data.coins;
                     userTeam = rData.data.team;
                 }
-                
                 locationLayer.clearLayers();
                 lData.data.forEach(loc => {
                     const coords = loc.coords.split(',').map(Number);
@@ -208,7 +199,6 @@
                     L.circle(coords, { radius: 25, color: loc.kleur, fillOpacity: 0.3, interactive: true }).addTo(locationLayer).bindPopup(popupHTML);
                     const iconHtml = `<div class="custom-icon-container">${loc.status!=="ok"?`<div class="warning-blink">⚠️</div>`:""}<div class="map-emoji">${emoji}</div></div>`;
                     L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: iconHtml, iconSize: [50, 50], iconAnchor: [25, 25] }), interactive: false }).addTo(locationLayer);
-                    
                     markersRef[loc.id] = { coords };
                 });
             } catch(e) {}
@@ -230,7 +220,13 @@
             else userMarker.setLatLng(e.latlng);
         });
 
-        window.onload = () => { fetchStartTime(); updateGame(); setInterval(updateGame, 20000); if (localStorage.getItem('activeInteract')) runTimerCycle(); locateUser(); };
+        window.onload = () => { 
+            fetchStartTime(); 
+            updateGame(); 
+            setInterval(updateGame, 20000); 
+            if (localStorage.getItem('activeInteract')) runTimerCycle(); 
+            locateUser(); 
+        };
     </script>
 </body>
 </html>
