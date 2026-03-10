@@ -182,20 +182,20 @@
                         if (isOwner) {
                             act = "upgrade";
                             if (loc.upgrade === "standaard") { btnTxt = "Wachtposten"; cost = "100🪵, 50🪨"; }
-                            else if (loc.upgrade === "Wachtposten") { btnTxt = "Palissade"; cost = "150🪵, 150🪨"; }
+                            else if (loc.upgrade === "Wachtposten") { btnTxt = "Palissademuur"; cost = "150🪵, 150🪨"; }
                             else if (loc.upgrade === "Palissademuur") { btnTxt = "Fortificaties"; cost = "200🪵, 200🪨, 100💰"; }
                             else { btnTxt = "MAX"; act = ""; }
                             time = 30;
                         } else {
                             act = "attack"; btnTxt = "Basis Aanvallen"; cost = "150💰";
                             time = loc.attackDuration;
-                            if (!loc.canAttackBasis) { btnTxt = "Verdedig eerst mijnen"; disabled = true; }
+                            if (!loc.canAttackBasis) { btnTxt = "Vernietig eerst alle mijnen van dit team"; disabled = true; }
                         }
                     } else {
                         if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Mijn Bouwen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
                         else if (isOwner) {
                             act = "upgrade";
-                            if (loc.upgrade === "standaard") { btnTxt = "Arbeiders"; cost = "50🌾, 50💰"; }
+                            if (loc.upgrade === "standaard") { btnTxt = "Gewapende Arbeiders"; cost = "50🌾, 50💰"; }
                             else if (loc.upgrade === "Gewapende Arbeiders") { btnTxt = "Buitenpost"; cost = "75🪵, 75🪨"; }
                             else { btnTxt = "MAX"; act = ""; }
                             time = 30;
