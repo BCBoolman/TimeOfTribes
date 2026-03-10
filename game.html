@@ -24,13 +24,25 @@
         
         .day-timer { color: #facc15; font-family: monospace; font-weight: bold; }
         .popup-content { text-align: center; color: #333; min-width: 150px; }
+
+        /* Overlay voor meldingen */
+        #game-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 9999; display: none; 
+            flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        }
     </style>
 </head>
 <body>
 
+    <div id="game-overlay">
+        <h1 id="overlay-title">Spel Status</h1>
+        <p id="overlay-msg">Laden...</p>
+    </div>
+
     <div class="game-ui-top">
         <div class="timer-row">
-            <div>⏱️ <span id="gameClock">00:00:00</span></div>
+            <div>⏱️ <span id="gameClock">02:00:00</span></div>
             <div>☀️ Dag: <span id="dayTimer" class="day-timer">15:00</span></div>
         </div>
         <div class="resource-row">
@@ -48,7 +60,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzxQFduldUp-7i2ufEQjKHxMxZRx2c93S4cR0hduGu53W-z4vbCUFg4aay2gmJFyZAv5g/exec"; 
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzJCXoISaOG6BKyZsKtOtN3nCB9pTQoRSHDEpCRkNew9D4N8M3HAI1NQKWjm3TBSioOWA/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         const locationLayer = L.layerGroup().addTo(map);
@@ -60,13 +72,34 @@
             try {
                 const r = await fetch(`${scriptURL}?action=getStartTime`);
                 const d = await r.json();
+                
+                if (d.status === "waiting") {
+                    showOverlay("Nog even geduld", "Het spel is nog niet gestart.");
+                    return;
+                } else if (d.status === "finished") {
+                    showOverlay("Spel afgelopen", "De tijd is verstreken.");
+                    return;
+                }
+
                 gameStartTime = d.startTime;
                 console.log("Starttijd geladen:", gameStartTime);
+                hideOverlay();
                 heartbeat();
             } catch(e) {
                 console.error("Fout bij laden starttijd, retry over 5s...");
                 setTimeout(fetchStartTime, 5000);
             }
+        }
+
+        function showOverlay(title, msg) {
+            const div = document.getElementById('game-overlay');
+            document.getElementById('overlay-title').innerText = title;
+            document.getElementById('overlay-msg').innerText = msg;
+            div.style.display = "flex";
+        }
+
+        function hideOverlay() {
+            document.getElementById('game-overlay').style.display = "none";
         }
 
         function heartbeat() {
@@ -76,17 +109,27 @@
 
         function updateClocks() {
             if (!gameStartTime) return;
+            
             const nu = Date.now();
+            const GAME_DURATION = 2 * 60 * 60 * 1000;
+            const endTime = gameStartTime + GAME_DURATION;
             const diff = nu - gameStartTime;
+            const resterend = endTime - nu;
 
-            // Totale looptijd
+            // Totale looptijd (Aftellen naar 00:00:00)
+            if (resterend <= 0) {
+                document.getElementById('gameClock').innerText = "00:00:00";
+                showOverlay("Einde Spel", "De 2 uur zijn om! Je kunt geen acties meer uitvoeren.");
+                return;
+            }
+
+            const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
+
+            // Dag-timer (15:00 naar 00:00 cyclus)
             const absDiff = Math.abs(diff);
-            const h = Math.floor(absDiff / 3600000).toString().padStart(2, '0');
-            const m = Math.floor((absDiff % 3600000) / 60000).toString().padStart(2, '0');
-            const s = Math.floor((absDiff % 60000) / 1000).toString().padStart(2, '0');
-            document.getElementById('gameClock').innerText = (diff < 0 ? "-" : "") + `${h}:${m}:${s}`;
-
-            // Dag-timer (15:00 naar 00:00)
             const cycMs = 15 * 60 * 1000;
             const msInCyc = absDiff % cycMs;
             const restMs = cycMs - msInCyc;
@@ -153,6 +196,12 @@
                     fetch(`${scriptURL}?action=getLocations`)
                 ]);
                 const rData = await rRes.json(), lData = await lRes.json();
+                
+                if(rData.result === "error") {
+                    console.warn("Server blokkade:", rData.msg);
+                    return;
+                }
+
                 if(rData.result === "success") {
                     document.getElementById('food').innerText = rData.data.food;
                     document.getElementById('wood').innerText = rData.data.wood;
@@ -160,6 +209,7 @@
                     document.getElementById('coins').innerText = rData.data.coins;
                     userTeam = rData.data.team;
                 }
+                
                 locationLayer.clearLayers();
                 lData.data.forEach(loc => {
                     const coords = loc.coords.split(',').map(Number);
@@ -214,7 +264,7 @@
             }
         }
 
-        function locateUser() { map.locate({setView: true, maxZoom: 10}); }
+        function locateUser() { map.locate({setView: true, maxZoom: 18}); }
         map.on('locationfound', e => {
             if (!userMarker) userMarker = L.marker(e.latlng).addTo(map);
             else userMarker.setLatLng(e.latlng);
