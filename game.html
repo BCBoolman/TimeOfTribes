@@ -14,23 +14,16 @@
         .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 10px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
         .game-btn { background: #333; color: white; border: 1px solid #555; padding: 14px; border-radius: 8px; flex: 1; font-weight: bold; pointer-events: auto; }
         .btn-interact { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-interact:disabled { background: #4b5563; color: #9ca3af; }
+        .btn-interact:disabled { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
         
-        /* Icoontjes styling */
         .custom-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px !important; height: 50px !important; }
         .map-emoji { font-size: 28px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); line-height: 1; }
         .warning-blink { animation: blinker 0.8s linear infinite; color: #ff4444; font-weight: bold; font-size: 24px; filter: drop-shadow(0px 0px 3px black); margin-bottom: -5px; }
         @keyframes blinker { 50% { opacity: 0; } }
         
         .day-timer { color: #facc15; font-family: monospace; font-weight: bold; }
-        .popup-content { text-align: center; color: #333; min-width: 150px; }
-
-        /* Overlay voor meldingen */
-        #game-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); z-index: 9999; display: none; 
-            flex-direction: column; align-items: center; justify-content: center; text-align: center;
-        }
+        .popup-content { text-align: center; color: #333; min-width: 180px; }
+        #game-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     </style>
 </head>
 <body>
@@ -60,99 +53,64 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzL16TUPIP0u_9GVobBG3OKzfoBPkZ__9_fCOX7R9_1JmDFy5OOOyhUgFrLF5wf0-InFw/exec"; 
+        const scriptURL = "https://script.google.com/macros/s/AKfycbygsy5_hQE7_quB-uIUnoRvjM--UqOTAR4_6rOd1VBDJlexvsimvT2_htIuFYHO6Oid7A/exec"; // VERVANG DEZE URL!
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         const locationLayer = L.layerGroup().addTo(map);
         
-        let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null;
+        let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null, warnedForConsumption = false;
 
-        // --- TIJD EN HEARTBEAT ---
-async function fetchStartTime() {
-    try {
-        const r = await fetch(`${scriptURL}?action=getStartTime`);
-        const d = await r.json();
-        
-        // DEBUG ALERT: Dit vertelt ons wat de server stuurt
-        const serverTijd = new Date(d.startTime).toLocaleString();
-        const nuTijd = new Date().toLocaleString();
-        alert("Status: " + d.status + "\nServer Start: " + serverTijd + "\nNu in Browser: " + nuTijd);
-
-        if (d.status === "waiting") {
-            showOverlay("Nog even geduld", "Het spel start om " + serverTijd);
-            return;
-        } else if (d.status === "finished") {
-            showOverlay("Spel afgelopen", "De tijd is verstreken volgens de server.");
-            return;
+        async function fetchStartTime() {
+            try {
+                const r = await fetch(`${scriptURL}?action=getStartTime`);
+                const d = await r.json();
+                if (d.status === "waiting") return showOverlay("Wachten...", "Spel start om " + new Date(d.startTime).toLocaleTimeString());
+                if (d.status === "finished") return showOverlay("Afgelopen", "Het spel is voorbij.");
+                gameStartTime = d.startTime;
+                hideOverlay();
+                heartbeat();
+            } catch(e) { setTimeout(fetchStartTime, 5000); }
         }
-
-        gameStartTime = d.startTime;
-        hideOverlay();
-        heartbeat();
-    } catch(e) {
-        console.error("Fout:", e);
-        setTimeout(fetchStartTime, 5000);
-    }
-}
 
         function showOverlay(title, msg) {
-            const div = document.getElementById('game-overlay');
+            document.getElementById('game-overlay').style.display = "flex";
             document.getElementById('overlay-title').innerText = title;
             document.getElementById('overlay-msg').innerText = msg;
-            div.style.display = "flex";
         }
+        function hideOverlay() { document.getElementById('game-overlay').style.display = "none"; }
 
-        function hideOverlay() {
-            document.getElementById('game-overlay').style.display = "none";
-        }
-
-        function heartbeat() {
-            updateClocks();
-            setTimeout(heartbeat, 1000);
-        }
+        function heartbeat() { updateClocks(); setTimeout(heartbeat, 1000); }
 
         function updateClocks() {
             if (!gameStartTime) return;
-            
-            const nu = Date.now();
-            const GAME_DURATION = 2 * 60 * 60 * 1000;
-            const endTime = gameStartTime + GAME_DURATION;
-            const diff = nu - gameStartTime;
-            const resterend = endTime - nu;
+            const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
 
-            // Totale looptijd (Aftellen naar 00:00:00)
-            if (resterend <= 0) {
-                document.getElementById('gameClock').innerText = "00:00:00";
-                showOverlay("Einde Spel", "De 2 uur zijn om! Je kunt geen acties meer uitvoeren.");
-                return;
-            }
+            if (resterend <= 0) return showOverlay("Einde Spel", "De tijd is om!");
 
             const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
             const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
             const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
 
-            // Dag-timer (15:00 naar 00:00 cyclus)
-            const absDiff = Math.abs(diff);
-            const cycMs = 15 * 60 * 1000;
-            const msInCyc = absDiff % cycMs;
-            const restMs = cycMs - msInCyc;
+            const cycMs = 15 * 60 * 1000, restMs = cycMs - (diff % cycMs);
             const dm = Math.floor(restMs / 60000).toString().padStart(2, '0');
             const ds = Math.floor((restMs % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
 
-            if (dm === "00" && ds === "00" && diff > 0) {
-                setTimeout(updateGame, 1500);
+            // 1 Minuut waarschuwing voor consumptie
+            if (dm === "01" && ds === "00" && !warnedForConsumption) {
+                alert("⚠️ LET OP: De dagconsumptie wordt over 1 minuut afgeschreven!");
+                warnedForConsumption = true;
             }
+            if (dm === "14") warnedForConsumption = false; 
+            if (dm === "00" && ds === "00") setTimeout(updateGame, 1500);
         }
 
-        // --- INTERACTIE ---
         async function startInteract(id, act, duration, coords) {
+            if (isInteracting) return alert("Je bent al bezig met een actie!");
             const endTimestamp = Date.now() + (duration * 1000);
             localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
-            await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}`);
             runTimerCycle();
-            updateGame();
         }
 
         function runTimerCycle() {
@@ -160,37 +118,36 @@ async function fetchStartTime() {
             if (!data) { isInteracting = false; return; }
             isInteracting = true;
             const { id, act, endTimestamp, coords } = JSON.parse(data);
-            const nu = Date.now(), over = Math.ceil((endTimestamp - nu) / 1000);
+            const over = Math.ceil((endTimestamp - Date.now()) / 1000);
+            
             if (over <= 0) { finishInteract(id, act); return; }
-            if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) { stopInteractRemote(id, "Buiten bereik!"); return; }
+            if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
+                alert("Buiten bereik! Actie afgebroken.");
+                localStorage.removeItem('activeInteract');
+                isInteracting = false;
+                updateGame();
+                return;
+            }
+
             const btn = document.getElementById(`btn-${id}`);
             if (btn) {
                 btn.disabled = true;
-                btn.innerText = `BEZIG... ${over}s`;
+                btn.innerText = `${act.toUpperCase()}... ${over}s`;
                 btn.style.background = "#d97706";
             }
             setTimeout(runTimerCycle, 1000);
         }
 
-        async function stopInteractRemote(id, msg) {
-            localStorage.removeItem('activeInteract');
-            isInteracting = false;
-            alert(msg);
-            await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
-            updateGame();
-        }
-
         async function finishInteract(id, act) {
+            const speler = localStorage.getItem("tribe_player");
+            const r = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&team=${encodeURIComponent(userTeam)}&naam=${encodeURIComponent(speler)}`);
+            const d = await r.json();
+            alert(d.msg || (d.result === "success" ? "Actie geslaagd!" : "Mislukt: " + d.msg));
             localStorage.removeItem('activeInteract');
             isInteracting = false;
-            const speler = localStorage.getItem("tribe_player");
-            const r = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&naam=${encodeURIComponent(speler)}`);
-            const d = await r.json();
-            alert(d.msg);
             updateGame();
         }
 
-        // --- GAME DATA ---
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
@@ -201,16 +158,11 @@ async function fetchStartTime() {
                 ]);
                 const rData = await rRes.json(), lData = await lRes.json();
                 
-                if(rData.result === "error") {
-                    console.warn("Server blokkade:", rData.msg);
-                    return;
-                }
-
                 if(rData.result === "success") {
-                    document.getElementById('food').innerText = rData.data.food;
-                    document.getElementById('wood').innerText = rData.data.wood;
-                    document.getElementById('stone').innerText = rData.data.stone;
-                    document.getElementById('coins').innerText = rData.data.coins;
+                    document.getElementById('food').innerText = Math.floor(rData.data.food);
+                    document.getElementById('wood').innerText = Math.floor(rData.data.wood);
+                    document.getElementById('stone').innerText = Math.floor(rData.data.stone);
+                    document.getElementById('coins').innerText = Math.floor(rData.data.coins);
                     userTeam = rData.data.team;
                 }
                 
@@ -219,49 +171,53 @@ async function fetchStartTime() {
                     const coords = loc.coords.split(',').map(Number);
                     const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
                     const isOwner = loc.eigenaar.toLowerCase() === userTeam.toLowerCase();
-                    const isBasis = loc.locatie.toLowerCase().includes("basis");
-                    let emoji = loc.locatie.toLowerCase().includes("hout") ? "🪵" : loc.locatie.toLowerCase().includes("steen") ? "🪨" : loc.locatie.toLowerCase().includes("voedsel") ? "🌾" : "🏰";
+                    const isBasis = loc.type.toLowerCase().includes("basis");
                     
-                    let btnTxt = "N/A", time = 0, act = "", cost = "";
+                    let emoji = "🏰", btnTxt = "N/A", time = 0, act = "", cost = "", disabled = (dist > 25);
+                    if (loc.type.toLowerCase().includes("voedsel")) emoji = "🌾";
+                    if (loc.type.toLowerCase().includes("hout")) emoji = "🪵";
+                    if (loc.type.toLowerCase().includes("steen")) emoji = "🪨";
+
                     if (isBasis) {
                         if (isOwner) {
                             act = "upgrade";
-                            if (loc.type === "standaard") { btnTxt = "Wachtposten"; cost = "100🪵, 50🪨"; }
-                            else if (loc.type === "Wachtposten") { btnTxt = "Palissade"; cost = "150🪵, 150🪨"; }
-                            else if (loc.type === "Palissademuur") { btnTxt = "Fortificatie"; cost = "200🪵, 200🪨, 100💰"; }
+                            if (loc.upgrade === "standaard") { btnTxt = "Wachtposten"; cost = "100🪵, 50🪨"; }
+                            else if (loc.upgrade === "Wachtposten") { btnTxt = "Palissade"; cost = "150🪵, 150🪨"; }
+                            else if (loc.upgrade === "Palissademuur") { btnTxt = "Fortificaties"; cost = "200🪵, 200🪨, 100💰"; }
                             else { btnTxt = "MAX"; act = ""; }
+                            time = 30;
                         } else {
-                            act = "attack"; btnTxt = "Aanvallen"; cost = "150💰";
-                            const tijden = { "standaard": 150, "Wachtposten": 225, "Palissademuur": 300, "Fortificaties": 450 };
-                            time = tijden[loc.type] || 150;
+                            act = "attack"; btnTxt = "Basis Aanvallen"; cost = "150💰";
+                            time = loc.attackDuration;
+                            if (!loc.canAttackBasis) { btnTxt = "Verdedig eerst mijnen"; disabled = true; }
                         }
                     } else {
-                        if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Bouwen"; cost = "75V, 75H, 75S"; time = 30; }
+                        if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Mijn Bouwen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
                         else if (isOwner) {
                             act = "upgrade";
-                            if (loc.type === "standaard") { btnTxt = "Arbeiders"; cost = "50V, 50💰"; }
-                            else if (loc.type === "Gewapende Arbeiders") { btnTxt = "Buitenpost"; cost = "75H, 75S"; }
+                            if (loc.upgrade === "standaard") { btnTxt = "Arbeiders"; cost = "50🌾, 50💰"; }
+                            else if (loc.upgrade === "Gewapende Arbeiders") { btnTxt = "Buitenpost"; cost = "75🪵, 75🪨"; }
                             else { btnTxt = "MAX"; act = ""; }
+                            time = 30;
                         } else {
-                            act = "attack"; btnTxt = "Veroveren"; cost = "75💰";
-                            time = (loc.type === "Gewapende Arbeiders") ? 135 : (loc.type === "Buitenpost") ? 180 : 90;
+                            act = "attack"; btnTxt = "Mijn Aanvallen"; cost = "75💰";
+                            time = loc.attackDuration;
                         }
                     }
 
-                    const popupHTML = `<div class="popup-content">${loc.status!=="ok"?`<b style="color:red">⚠️ ${loc.status.toUpperCase()}</b><br>`:""}<b>${loc.locatie}</b><br><small>${loc.type}</small><hr><span style="font-size:0.75rem;">${cost}</span><button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${dist>25||act===""?'disabled':''}>${dist<=25?btnTxt:"Te ver weg"}</button></div>`;
+                    const popupHTML = `<div class="popup-content"><b>${loc.type}</b><br><small>Niveau: ${loc.upgrade}</small><br><small>Eigenaar: ${loc.eigenaar}</small><hr><span style="font-size:0.75rem;">Kost: ${cost}</span><button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button></div>`;
 
-                    L.circle(coords, { radius: 15, color: loc.kleur, fillOpacity: 0.3, interactive: true }).addTo(locationLayer).bindPopup(popupHTML);
-                    const iconHtml = `<div class="custom-icon-container">${loc.status!=="ok"?`<div class="warning-blink">⚠️</div>`:""}<div class="map-emoji">${emoji}</div></div>`;
-                    L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: iconHtml, iconSize: [50, 50], iconAnchor: [25, 25] }), interactive: false }).addTo(locationLayer);
+                    L.circle(coords, { radius: 15, color: loc.kleur, fillOpacity: 0.3 }).addTo(locationLayer).bindPopup(popupHTML);
+                    L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: `<div class="custom-icon-container"><div class="map-emoji">${emoji}</div></div>`, iconSize: [50, 50], iconAnchor: [25, 25] }), interactive: false }).addTo(locationLayer);
                     markersRef[loc.id] = { coords };
                 });
-            } catch(e) {}
+            } catch(e) { console.error(e); }
         }
 
         function autoOpenInteract() {
             if (!userMarker) return;
             for (let id in markersRef) {
-                if (map.distance(userMarker.getLatLng(), markersRef[id].coords) <= 15) {
+                if (map.distance(userMarker.getLatLng(), markersRef[id].coords) <= 20) {
                     locationLayer.eachLayer(l => { if(l.getPopup && l.getLatLng().equals(markersRef[id].coords)) l.openPopup(); });
                     return;
                 }
@@ -277,7 +233,7 @@ async function fetchStartTime() {
         window.onload = () => { 
             fetchStartTime(); 
             updateGame(); 
-            setInterval(updateGame, 20000); 
+            setInterval(updateGame, 15000); 
             if (localStorage.getItem('activeInteract')) runTimerCycle(); 
             locateUser(); 
         };
