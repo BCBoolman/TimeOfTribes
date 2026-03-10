@@ -53,7 +53,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbygsy5_hQE7_quB-uIUnoRvjM--UqOTAR4_6rOd1VBDJlexvsimvT2_htIuFYHO6Oid7A/exec"; // VERVANG DEZE URL!
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzybA897Amdr7i_rlTATqY6_XzCkhcelSews7xaB8ZewaX3S7ghReughhmxi20W8U2V1Q/exec"; // VERVANG DEZE URL!
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         const locationLayer = L.layerGroup().addTo(map);
@@ -106,12 +106,29 @@
             if (dm === "00" && ds === "00") setTimeout(updateGame, 1500);
         }
 
-        async function startInteract(id, act, duration, coords) {
-            if (isInteracting) return alert("Je bent al bezig met een actie!");
-            const endTimestamp = Date.now() + (duration * 1000);
-            localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
-            runTimerCycle();
-        }
+async function startInteract(id, act, duration, coords) {
+    if (isInteracting) return alert("Je bent al bezig met een actie!");
+    
+    // NIEUW: Meld de server direct dat we beginnen voor de status-update
+    try {
+        await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`);
+    } catch(e) { console.error("Kon status niet updaten"); }
+
+    const endTimestamp = Date.now() + (duration * 1000);
+    localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
+    
+    runTimerCycle();
+    updateGame(); // Ververs kaart direct om de warning te zien
+}
+
+async function stopInteractRemote(id, msg) {
+    localStorage.removeItem('activeInteract');
+    isInteracting = false;
+    alert(msg);
+    // Meld de server dat het geannuleerd is
+    await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
+    updateGame();
+}
 
         function runTimerCycle() {
             const data = localStorage.getItem('activeInteract');
