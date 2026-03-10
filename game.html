@@ -68,28 +68,32 @@
         let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null;
 
         // --- TIJD EN HEARTBEAT ---
-        async function fetchStartTime() {
-            try {
-                const r = await fetch(`${scriptURL}?action=getStartTime`);
-                const d = await r.json();
-                
-                if (d.status === "waiting") {
-                    showOverlay("Nog even geduld", "Het spel is nog niet gestart.");
-                    return;
-                } else if (d.status === "finished") {
-                    showOverlay("Spel afgelopen", "De tijd is verstreken.");
-                    return;
-                }
+async function fetchStartTime() {
+    try {
+        const r = await fetch(`${scriptURL}?action=getStartTime`);
+        const d = await r.json();
+        
+        // DEBUG ALERT: Dit vertelt ons wat de server stuurt
+        const serverTijd = new Date(d.startTime).toLocaleString();
+        const nuTijd = new Date().toLocaleString();
+        alert("Status: " + d.status + "\nServer Start: " + serverTijd + "\nNu in Browser: " + nuTijd);
 
-                gameStartTime = d.startTime;
-                console.log("Starttijd geladen:", gameStartTime);
-                hideOverlay();
-                heartbeat();
-            } catch(e) {
-                console.error("Fout bij laden starttijd, retry over 5s...");
-                setTimeout(fetchStartTime, 5000);
-            }
+        if (d.status === "waiting") {
+            showOverlay("Nog even geduld", "Het spel start om " + serverTijd);
+            return;
+        } else if (d.status === "finished") {
+            showOverlay("Spel afgelopen", "De tijd is verstreken volgens de server.");
+            return;
         }
+
+        gameStartTime = d.startTime;
+        hideOverlay();
+        heartbeat();
+    } catch(e) {
+        console.error("Fout:", e);
+        setTimeout(fetchStartTime, 5000);
+    }
+}
 
         function showOverlay(title, msg) {
             const div = document.getElementById('game-overlay');
