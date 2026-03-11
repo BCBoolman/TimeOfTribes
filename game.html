@@ -13,6 +13,25 @@
         .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
         .timer-row { display: flex; justify-content: space-between; background: rgba(0,0,0,0.9); padding: 12px; border-bottom: 1px solid #444; pointer-events: auto; }
         .resource-row { display: flex; justify-content: space-around; background: rgba(30,30,30,0.9); padding: 8px; color: #fbbf24; pointer-events: auto; font-size: 0.9rem; font-weight: bold; }
+        
+        /* NIEUW: Statusbalk voor meldingen (vervangt alert) */
+        #status-bar { 
+            position: fixed; 
+            top: 85px; /* Onder de resource-row */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(220, 38, 38, 0.9); /* Rood voor waarschuwingen */
+            color: white; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 0.85rem; 
+            font-weight: bold; 
+            z-index: 150; 
+            display: none; /* Standaard verborgen */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+
         .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 10px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
         .game-btn { background: #333; color: white; border: 1px solid #555; padding: 14px; border-radius: 8px; flex: 1; font-weight: bold; pointer-events: auto; }
         .btn-interact { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
@@ -22,21 +41,26 @@
         .custom-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px !important; height: 50px !important; position: relative; }
         .map-emoji { font-size: 28px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); line-height: 1; z-index: 1; }
         
-        /* Status Uitroeptekens */
+        /* Status Uitroeptekens - REPARATIE: Knipperen toegevoegd */
         .warning-blink { 
-            animation: blinker 0.8s linear infinite; 
+            animation: blinker 1s linear infinite; /* REPARATIE: Animatie-naam klopt nu */
             font-weight: bold; 
-            font-size: 32px; 
+            font-size: 36px; /* Iets groter voor betere zichtbaarheid */
             line-height: 1;
             position: absolute;
-            top: -22px; 
+            top: -24px; 
             z-index: 10;
         }
         .status-claim { color: #000000; filter: drop-shadow(0px 0px 2px white); } 
         .status-attack { color: #ff4444; filter: drop-shadow(0px 0px 2px black); }
         .status-upgrade { color: #22c55e; filter: drop-shadow(0px 0px 2px black); }
 
-        @keyframes blinker { 50% { opacity: 0; } }
+        /* REPARATIE: De animatie-keyframes definitie ontbrak */
+        @keyframes blinker { 
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
         
         .day-timer { color: #facc15; font-family: monospace; font-weight: bold; }
         .popup-content { text-align: center; color: #333; min-width: 180px; }
@@ -49,6 +73,8 @@
         <h1 id="overlay-title">Spel Status</h1>
         <p id="overlay-msg">Laden...</p>
     </div>
+
+    <div id="status-bar">Melding...</div>
 
     <div class="game-ui-top">
         <div class="timer-row">
@@ -76,6 +102,15 @@
         const locationLayer = L.layerGroup().addTo(map);
         
         let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null, warnedForConsumption = false;
+
+        // NIEUW: Functie om de statusbalk te tonen (vervangt alert)
+        function showStatus(msg, duration = 4000) {
+            const bar = document.getElementById('status-bar');
+            bar.innerText = msg;
+            bar.style.display = "block";
+            // Verberg automatisch na een paar seconden
+            setTimeout(() => { bar.style.display = "none"; }, duration);
+        }
 
         async function fetchStartTime() {
             try {
@@ -115,7 +150,7 @@
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
 
             if (dm === "01" && ds === "00" && !warnedForConsumption) {
-                alert("⚠️ LET OP: De dagconsumptie wordt over 1 minuut afgeschreven!");
+                showStatus("⚠️ Consumptie over 1 minuut!"); // VERVANGEN: alert -> showStatus
                 warnedForConsumption = true;
             }
             if (dm === "14") warnedForConsumption = false; 
@@ -123,7 +158,7 @@
         }
 
         async function startInteract(id, act, duration, coords) {
-            if (isInteracting) return alert("Je bent al bezig met een actie!");
+            if (isInteracting) return showStatus("❌ Je bent al bezig!"); // VERVANGEN: alert -> showStatus
             
             try {
                 await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`);
@@ -139,7 +174,7 @@
         async function stopInteractRemote(id, msg) {
             localStorage.removeItem('activeInteract');
             isInteracting = false;
-            alert(msg);
+            showStatus("⚠️ " + msg); // VERVANGEN: alert -> showStatus
             await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
             updateGame();
         }
@@ -153,8 +188,8 @@
             
             if (over <= 0) { finishInteract(id, act); return; }
             if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
-                alert("Buiten bereik! Actie afgebroken.");
-                stopInteractRemote(id, "Buiten bereik!");
+                // VERVANGEN: alert verwijderd, wordt nu direct geannuleerd via stopInteractRemote
+                stopInteractRemote(id, "Buiten bereik! Actie afgebroken.");
                 return;
             }
 
@@ -171,7 +206,7 @@
             const speler = localStorage.getItem("tribe_player");
             const r = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&team=${encodeURIComponent(userTeam)}&naam=${encodeURIComponent(speler)}`);
             const d = await r.json();
-            alert(d.msg || (d.result === "success" ? "Actie geslaagd!" : "Mislukt: " + d.msg));
+            showStatus(d.msg || (d.result === "success" ? "✅ Geslaagd!" : "❌ Mislukt: " + d.msg)); // VERVANGEN: alert -> showStatus
             localStorage.removeItem('activeInteract');
             isInteracting = false;
             updateGame();
@@ -282,7 +317,7 @@
             else userMarker.setLatLng(e.latlng);
         });
 
-window.onload = () => { 
+        window.onload = () => { 
             fetchStartTime(); 
             updateGame(); 
             
