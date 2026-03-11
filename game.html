@@ -112,17 +112,36 @@
             setTimeout(() => { bar.style.display = "none"; }, duration);
         }
 
-        async function fetchStartTime() {
-            try {
-                const r = await fetch(`${scriptURL}?action=getStartTime`);
-                const d = await r.json();
-                if (d.status === "waiting") return showOverlay("Wachten...", "Spel start om " + new Date(d.startTime).toLocaleTimeString());
-                if (d.status === "finished") return showOverlay("Afgelopen", "Het spel is voorbij.");
-                gameStartTime = d.startTime;
-                hideOverlay();
-                heartbeat();
-            } catch(e) { setTimeout(fetchStartTime, 5000); }
+async function fetchStartTime() {
+    try {
+        const r = await fetch(`${scriptURL}?action=getStartTime`);
+        const d = await r.json();
+        
+        if (d.status === "waiting") {
+            return showOverlay("Wachten...", "Spel start om " + new Date(d.startTime).toLocaleTimeString());
         }
+        
+        if (d.status === "finished") {
+            return showOverlay("Afgelopen", "Het spel is voorbij.");
+        }
+
+        gameStartTime = d.startTime;
+
+        // Check of we lokaal ook al over de tijd zijn
+        const nu = Date.now();
+        const resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
+        
+        if (resterend > 0) {
+            hideOverlay();
+        } else {
+            showOverlay("Einde Spel", "De tijd is om!");
+        }
+
+        heartbeat();
+    } catch(e) { 
+        setTimeout(fetchStartTime, 5000); 
+    }
+}
 
         function showOverlay(title, msg) {
             document.getElementById('game-overlay').style.display = "flex";
