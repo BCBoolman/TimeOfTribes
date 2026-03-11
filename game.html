@@ -28,7 +28,6 @@
             position: relative;
         }
 
-        /* KAART VOLLEDIG ZICHTBAAR */
         #map {
             position: absolute;
             top: 0; bottom: 0; width: 100%;
@@ -36,7 +35,7 @@
         }
 
         /* =========================================
-           UI LAYERS (VERGROOT)
+           UI LAYERS (BOVEN & ONDER)
            ========================================= */
         .game-ui-top {
             position: fixed;
@@ -49,40 +48,70 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 8, 20, 0.85); /* Iets minder doorzichtig voor leesbaarheid */
+            background: rgba(0, 8, 20, 0.9);
             backdrop-filter: blur(5px);
             padding: 15px 20px;
             border-bottom: 2px solid rgba(255, 255, 255, 0.2);
             pointer-events: auto;
         }
 
-        /* Grotere timers */
         #gameClock, #dayTimer {
             font-size: 1.3rem; 
             font-weight: bold;
             letter-spacing: 1px;
+            color: #fff;
         }
 
         .top-logo {
-            height: 55px; /* Groter logo */
+            height: 55px;
             filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
         }
 
-        /* Grotere grondstoffen */
         .resource-row {
             display: flex;
             justify-content: space-around;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             padding: 12px 5px;
             color: #fbbf24;
             pointer-events: auto;
-            font-size: 1.1rem; /* Groter font */
+            font-size: 1.1rem;
             font-weight: bold;
-            letter-spacing: 1px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Knoppen Onderin (Groter & Tactieler) */
+        /* UNIFORME KNOPPEN */
+        .game-btn, .btn-interact {
+            background: rgba(0, 8, 20, 0.9);
+            backdrop-filter: blur(5px);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 18px 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: center;
+            display: block;
+            width: 100%;
+            font-family: 'Cinzel', serif;
+        }
+
+        .game-btn:active, .btn-interact:active {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .btn-interact:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
         .game-ui-bottom {
             position: fixed;
             bottom: 30px;
@@ -95,31 +124,26 @@
             pointer-events: none;
         }
 
-        .game-btn {
-            background: rgba(0, 8, 20, 0.9);
-            backdrop-filter: blur(5px);
-            color: #fff;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 18px 5px; /* Meer padding voor makkelijker drukken */
-            border-radius: 4px;
+        .game-ui-bottom .game-btn {
             flex: 1;
-            font-weight: bold;
-            font-size: 0.85rem; /* Groter font */
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            cursor: pointer;
             pointer-events: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-
-        .game-btn:active {
-            background: #fff;
-            color: #000;
         }
 
         /* =========================================
-           MODALS (POP-UPS)
+           POPUP & MODAL STYLING
            ========================================= */
+        .leaflet-popup-content-wrapper {
+            background: rgba(0, 8, 20, 0.95);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0;
+            padding: 5px;
+        }
+
+        .leaflet-popup-tip {
+            background: rgba(0, 8, 20, 0.95);
+        }
+
         .modal {
             position: fixed;
             top: 50%; left: 50%;
@@ -145,7 +169,6 @@
             padding: 25px;
             max-height: 60vh;
             overflow-y: auto;
-            font-size: 1.1rem;
         }
 
         .close-modal {
@@ -153,7 +176,7 @@
         }
 
         /* =========================================
-           MAP MARKERS & STATUS
+           STATUS & MARKERS
            ========================================= */
         #status-bar {
             position: fixed; top: 135px; left: 50%;
@@ -171,27 +194,21 @@
         }
 
         .map-emoji {
-            font-size: 32px; /* Grotere iconen op de kaart */
+            font-size: 32px;
             filter: drop-shadow(0px 2px 4px rgba(0,0,0,1));
         }
 
         .warning-blink {
             animation: blinker 1s linear infinite;
-            font-weight: bold; font-size: 42px; /* Groter uitroepteken */
+            font-weight: bold; font-size: 42px;
             position: absolute; top: -25px; z-index: 10;
         }
 
         @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
 
-        .status-claim { color: #000; filter: drop-shadow(0px 0px 4px white); } 
-        .status-attack { color: #ff4444; filter: drop-shadow(0px 0px 4px black); }
-        .status-upgrade { color: #22c55e; filter: drop-shadow(0px 0px 4px black); }
-
-        .btn-interact {
-            background: #fff; border: none; color: #000;
-            padding: 15px; width: 100%; margin-top: 15px;
-            font-family: 'Cinzel', serif; font-size: 1rem; font-weight: bold; cursor: pointer;
-        }
+        /* Status kleuren in de popup */
+        .text-status-active { color: #fbbf24; font-weight: bold; } /* Oranje-achtig voor actie */
+        .text-status-ok { color: #22c55e; } /* Groen voor OK */
 
         #game-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -257,7 +274,6 @@
         const scriptURL = "https://script.google.com/macros/s/AKfycbxPFzpgc05W4SXZtD5T3cxXZoBzMIxUFI316UWfibVdtp5NencKdi0fPPYyPcYV47JWLQ/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         
-        // Heldere maar rustige kaart voor betere oriëntatie in het bos
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
         
         const locationLayer = L.layerGroup().addTo(map);
@@ -265,8 +281,7 @@
 
         function showStatus(msg, duration = 4000) {
             const bar = document.getElementById('status-bar');
-            bar.innerText = msg;
-            bar.style.display = "block";
+            bar.innerText = msg; bar.style.display = "block";
             setTimeout(() => { bar.style.display = "none"; }, duration);
         }
 
@@ -280,10 +295,8 @@
                 if (d.status === "waiting") return showOverlay("Wachten...", "Start: " + new Date(d.startTime).toLocaleTimeString());
                 if (d.status === "finished") return showOverlay("Afgelopen", "Het spel is voorbij.");
                 gameStartTime = d.startTime;
-                const nu = Date.now();
-                const resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
-                if (resterend > 0) hideOverlay(); else showOverlay("Einde Spel", "De tijd is om!");
                 heartbeat();
+                hideOverlay();
             } catch(e) { setTimeout(fetchStartTime, 5000); }
         }
 
@@ -341,7 +354,10 @@
                 lData.data.forEach(loc => {
                     const coords = loc.coords.split(',').map(Number);
                     const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
-                    const isOwner = loc.eigenaar.toLowerCase() === userTeam.toLowerCase();
+                    const rawOwner = loc.eigenaar || "geen";
+                    const isOwner = rawOwner.toLowerCase() === userTeam.toLowerCase();
+                    const currentStatus = loc.status || "ok";
+                    const statusClass = currentStatus.toLowerCase() === "ok" ? "text-status-ok" : "text-status-active";
                     
                     let emoji = "🏰", btnTxt = "N/A", time = 0, act = "", cost = "", disabled = (dist > 25);
                     if (loc.type.toLowerCase().includes("voedsel")) emoji = "🌾";
@@ -362,7 +378,7 @@
                             if (!loc.canAttackBasis) { btnTxt = "Mijnen eerst"; disabled = true; }
                         }
                     } else {
-                        if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
+                        if (rawOwner === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
                         else if (isOwner) {
                             act = "upgrade";
                             if (loc.upgrade === "standaard") { btnTxt = "Arbeiders"; cost = "50🌾, 50💰"; }
@@ -374,25 +390,34 @@
                         }
                     }
 
-                    let statusIcon = "";
-                    if (loc.status && loc.status.toLowerCase() !== "ok") {
-                        let statusClass = "";
-                        const s = loc.status.toLowerCase();
-                        if (s.includes("claim")) statusClass = "status-claim";
-                        else if (s.includes("aanval") || s.includes("attack")) statusClass = "status-attack";
-                        else if (s.includes("upgrad") || s.includes("üpgrad")) statusClass = "status-upgrade";
-                        if (statusClass !== "") statusIcon = `<div class="warning-blink ${statusClass}">!</div>`;
+                    // UITROEPTEKEN LOGICA
+                    let blinkIcon = "";
+                    if (currentStatus.toLowerCase() !== "ok") {
+                        let bClass = "";
+                        const s = currentStatus.toLowerCase();
+                        if (s.includes("claim")) bClass = "status-claim";
+                        else if (s.includes("aanval") || s.includes("attack")) bClass = "status-attack";
+                        else if (s.includes("upgrad") || s.includes("üpgrad")) bClass = "status-upgrade";
+                        if (bClass !== "") blinkIcon = `<div class="warning-blink ${bClass}">!</div>`;
                     }
 
-                    const iconHtml = `<div class="custom-icon-container">${statusIcon}<div class="map-emoji">${emoji}</div></div>`;
-                    const popupHTML = `<div style="text-align:center; padding:5px;">
-                        <b style="font-size:1.1rem;">${loc.type}</b><br><small>${loc.upgrade}</small><br>
-                        <hr style="margin:8px 0;">
-                        <span style="font-size:0.9rem;">Kost: ${cost}</span>
+                    const iconHtml = `<div class="custom-icon-container">${blinkIcon}<div class="map-emoji">${emoji}</div></div>`;
+                    
+                    const displayOwner = rawOwner === "geen" ? "Niemand" : rawOwner;
+
+                    const popupHTML = `<div style="text-align:center; min-width:180px; color:#fff; font-family:'Cinzel',serif;">
+                        <b style="font-size:1.1rem; letter-spacing:1px; color:#fbbf24;">${loc.type}</b><br>
+                        <span style="font-size:0.8rem; opacity:0.8;">${loc.upgrade}</span>
+                        <hr style="margin:8px 0; opacity:0.2;">
+                        <div style="text-align:left; font-size:0.85rem; margin-bottom:10px; line-height:1.4;">
+                            Eigenaar: <span style="color:${loc.kleur || '#fff'}; font-weight:bold;">${displayOwner}</span><br>
+                            Status: <span class="${statusClass}">${currentStatus}</span>
+                        </div>
+                        <span style="font-size:0.8rem; display:block; margin-bottom:8px; opacity:0.7;">Kost: ${cost}</span>
                         <button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button>
                     </div>`;
 
-                    L.circle(coords, { radius: 15, color: loc.kleur, fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
+                    L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
                     L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: iconHtml, iconSize: [60, 60], iconAnchor: [30, 30] }), interactive: false }).addTo(locationLayer);
                     markersRef[loc.id] = { coords };
                 });
@@ -422,7 +447,7 @@
                 updateGame(); return;
             }
             const btn = document.getElementById(`btn-${id}`);
-            if (btn) { btn.disabled = true; btn.innerText = `${over}s`; btn.style.background = "#d97706"; btn.style.color="#fff"; }
+            if (btn) { btn.disabled = true; btn.innerText = `${over}s`; btn.style.background = "#d97706"; }
             setTimeout(runTimerCycle, 1000);
         }
 
@@ -442,8 +467,7 @@
         });
 
         window.onload = () => { 
-            fetchStartTime(); 
-            updateGame(); 
+            fetchStartTime(); updateGame(); 
             setInterval(updateGame, 15000); 
             const active = localStorage.getItem('activeInteract');
             if (active) {
