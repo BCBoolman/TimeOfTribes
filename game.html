@@ -276,7 +276,7 @@
                         const s = loc.status.toLowerCase();
                         if (s.includes("claim")) statusClass = "status-claim";
                         else if (s.includes("aanval") || s.includes("attack")) statusClass = "status-attack";
-                        else if (s.includes("upgrad")) statusClass = "status-upgrade";
+                        else if (s.includes("upgrad") || s.includes("üpgrad")) statusClass = "status-upgrade";
                         
                         if (statusClass !== "") statusIcon = `<div class="warning-blink ${statusClass}">!</div>`;
                     }
