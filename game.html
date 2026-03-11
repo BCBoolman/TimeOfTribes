@@ -40,7 +40,7 @@
         .game-ui-top {
             position: fixed;
             top: 0; width: 100%;
-            z-index: 1000; /* Altijd boven alles */
+            z-index: 1000;
             pointer-events: none;
         }
 
@@ -58,7 +58,6 @@
         #gameClock, #dayTimer {
             font-size: 1.3rem; 
             font-weight: bold;
-            letter-spacing: 1px;
             color: #fff;
         }
 
@@ -79,7 +78,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* UNIFORME KNOPPEN (LOGIN STIJL) */
+        /* UNIFORME KNOPPEN */
         .game-btn, .btn-interact {
             background: rgba(0, 8, 20, 0.9);
             backdrop-filter: blur(5px);
@@ -92,7 +91,6 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             cursor: pointer;
-            transition: 0.2s;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             text-align: center;
             display: block;
@@ -103,7 +101,12 @@
         .game-btn:active, .btn-interact:active {
             background: #fff;
             color: #000;
-            border-color: #fff;
+        }
+
+        /* Visueel "disabled" maar nog wel klikbaar voor de melding */
+        .btn-locked {
+            opacity: 0.5;
+            filter: grayscale(1);
         }
 
         .game-ui-bottom {
@@ -124,7 +127,7 @@
         }
 
         /* =========================================
-           POPUP & MODAL STYLING
+           POPUP STYLING
            ========================================= */
         .leaflet-popup-content-wrapper {
             background: rgba(0, 8, 20, 0.95);
@@ -133,89 +136,39 @@
             border-radius: 0;
             padding: 5px;
         }
-
         .leaflet-popup-tip { background: rgba(0, 8, 20, 0.95); }
 
-        .modal {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%; max-width: 450px;
-            background: rgba(0, 8, 20, 0.98);
-            backdrop-filter: blur(15px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .close-modal {
-            background: none; border: none; color: #ff4444; font-size: 1.5rem; cursor: pointer; font-weight: bold;
-        }
-
         /* =========================================
-           STATUS & MARKERS (HET PROBLEEMGEBIED)
+           STATUS & MARKERS
            ========================================= */
         .custom-icon-container {
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            width: 60px !important; 
-            height: 60px !important; 
-            position: relative;
-            overflow: visible !important; /* Zorgt dat het uitroepteken buiten het kader mag */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 60px !important; height: 60px !important; position: relative;
             z-index: 500 !important;
         }
 
-        .map-emoji {
-            font-size: 32px;
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,1));
-            z-index: 501;
-        }
-
-        /* UITROEPTEKEN FIX: Hogere z-index en betere positie */
         .warning-blink {
-            position: absolute;
-            top: -35px; /* Hoger boven de emoji */
-            left: 50%;
-            transform: translateX(-50%);
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
             animation: blinker 0.8s linear infinite;
-            font-weight: 900; 
-            font-size: 48px; /* Lekker groot */
-            z-index: 9999 !important; /* Forceer boven alles */
-            /* Krachtige omlijning voor zichtbaarheid */
-            text-shadow: 
-                -2px -2px 0 #fff,  
-                 2px -2px 0 #fff,
-                -2px  2px 0 #fff,
-                 2px  2px 0 #fff,
-                 0px 0px 10px rgba(0,0,0,1);
+            font-weight: 900; font-size: 48px; z-index: 9999 !important;
+            text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0px 0px 10px rgba(0,0,0,1);
         }
-
         @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
 
-        /* Kleuren voor het uitroepteken */
-        .status-claim { color: #000; } 
         .status-attack { color: #ff0000; }
+        .status-claim { color: #000; }
         .status-upgrade { color: #00ff00; }
 
         #status-bar {
-            position: fixed; top: 135px; left: 50%;
+            position: fixed; top: 145px; left: 50%;
             transform: translateX(-50%);
-            background: rgba(220, 38, 38, 0.9);
-            color: white; padding: 10px 20px;
-            font-size: 0.9rem; font-weight: bold;
-            z-index: 1500; display: none;
-            border: 1px solid white;
+            background: rgba(220, 38, 38, 0.95);
+            color: white; padding: 12px 25px;
+            font-size: 1rem; font-weight: bold;
+            z-index: 2000; display: none;
+            border: 2px solid white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            text-align: center; width: 80%;
         }
 
         #game-overlay {
@@ -251,26 +204,10 @@
 
     <div id="map"></div>
 
-    <div id="tradeModal" class="modal">
-        <div class="modal-header">
-            <h2 style="font-size: 1.2rem; letter-spacing: 2px;">Handelspost</h2>
-            <button class="close-modal" onclick="closeModal('tradeModal')">✕</button>
-        </div>
-        <div class="modal-body"><p style="text-align:center; opacity:0.6;">Nog geen handelaren...</p></div>
-    </div>
-
-    <div id="missionModal" class="modal">
-        <div class="modal-header">
-            <h2 style="font-size: 1.2rem; letter-spacing: 2px;">Missies</h2>
-            <button class="close-modal" onclick="closeModal('missionModal')">✕</button>
-        </div>
-        <div class="modal-body"><p style="text-align:center; opacity:0.6;">Geen missies...</p></div>
-    </div>
-
     <div class="game-ui-bottom">
         <button class="game-btn" onclick="locateUser()">📍 GPS</button>
-        <button class="game-btn" onclick="openModal('tradeModal')">🤝 Handel</button>
-        <button class="game-btn" onclick="openModal('missionModal')">📜 Missies</button>
+        <button class="game-btn" onclick="showStatus('🤝 Handelspost opent binnenkort...')">🤝 Handel</button>
+        <button class="game-btn" onclick="showStatus('📜 Geen nieuwe missies gevonden.')">📜 Missies</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -281,7 +218,7 @@
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
         
         const locationLayer = L.layerGroup().addTo(map);
-        let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null, warnedForConsumption = false;
+        let userMarker, userTeam = "", isInteracting = false, gameStartTime = null;
 
         function showStatus(msg, duration = 4000) {
             const bar = document.getElementById('status-bar');
@@ -289,50 +226,37 @@
             setTimeout(() => { bar.style.display = "none"; }, duration);
         }
 
-        function openModal(id) { document.getElementById(id).style.display = "flex"; }
-        function closeModal(id) { document.getElementById(id).style.display = "none"; }
-
         async function fetchStartTime() {
             try {
                 const r = await fetch(`${scriptURL}?action=getStartTime`);
                 const d = await r.json();
-                if (d.status === "waiting") return showOverlay("Wachten...", "Start: " + new Date(d.startTime).toLocaleTimeString());
-                if (d.status === "finished") return showOverlay("Afgelopen", "Het spel is voorbij.");
+                if (d.status === "waiting") return showOverlay("Wachten...", "Starttijd: " + new Date(d.startTime).toLocaleTimeString());
                 gameStartTime = d.startTime;
                 heartbeat();
-                hideOverlay();
+                document.getElementById('game-overlay').style.display = "none";
             } catch(e) { setTimeout(fetchStartTime, 5000); }
         }
 
         function showOverlay(title, msg) {
             document.getElementById('game-overlay').style.display = "flex";
-            document.getElementById('overlay-title').innerText = title;
             document.getElementById('overlay-msg').innerText = msg;
         }
-        function hideOverlay() { document.getElementById('game-overlay').style.display = "none"; }
 
         function heartbeat() { updateClocks(); setTimeout(heartbeat, 1000); }
 
         function updateClocks() {
             if (!gameStartTime) return;
             const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
-            if (resterend <= 0) return showOverlay("Einde Spel", "De tijd is om!");
+            if (resterend <= 0) return showOverlay("Einde", "De tijd is om!");
 
             const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
             const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
             const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
 
-            const cycMs = 15 * 60 * 1000, restMs = cycMs - (diff % cycMs);
-            const dm = Math.floor(restMs / 60000).toString().padStart(2, '0');
-            const ds = Math.floor((restMs % 60000) / 1000).toString().padStart(2, '0');
+            const dm = Math.floor((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) / 60000).toString().padStart(2, '0');
+            const ds = Math.floor(((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
-
-            if (dm === "01" && ds === "00" && !warnedForConsumption) {
-                showStatus("⚠️ Consumptie over 1 minuut!");
-                warnedForConsumption = true;
-            }
-            if (dm === "14") warnedForConsumption = false; 
             if (dm === "00" && ds === "00") setTimeout(updateGame, 1500);
         }
 
@@ -358,89 +282,51 @@
                 lData.data.forEach(loc => {
                     const coords = loc.coords.split(',').map(Number);
                     const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
-                    const rawOwner = loc.eigenaar || "geen";
-                    const isOwner = rawOwner.toLowerCase() === userTeam.toLowerCase();
-                    const currentStatus = loc.status || "ok";
-                    const statusClassLabel = currentStatus.toLowerCase() === "ok" ? "text-status-ok" : "text-status-active";
+                    const isOwner = loc.eigenaar.toLowerCase() === userTeam.toLowerCase();
+                    const isLocked = dist > 25; // Check voor de melding
                     
-                    let emoji = "🏰", btnTxt = "N/A", time = 0, act = "", cost = "", disabled = (dist > 25);
+                    let emoji = "🏰", btnTxt = "N/A", act = "", time = 30, cost = "";
                     if (loc.type.toLowerCase().includes("voedsel")) emoji = "🌾";
                     if (loc.type.toLowerCase().includes("hout")) emoji = "🪵";
                     if (loc.type.toLowerCase().includes("steen")) emoji = "🪨";
 
-                    if (loc.type.toLowerCase().includes("basis")) {
-                        if (isOwner) {
-                            act = "upgrade";
-                            if (loc.upgrade === "standaard") { btnTxt = "Wachtposten"; cost = "100🪵, 50🪨"; }
-                            else if (loc.upgrade === "Wachtposten") { btnTxt = "Palissadeuur"; cost = "150🪵, 150🪨"; }
-                            else if (loc.upgrade === "Palissademuur") { btnTxt = "Fortificaties"; cost = "200🪵, 200🪨, 100💰"; }
-                            else { btnTxt = "MAX"; act = ""; }
-                            time = 30;
-                        } else {
-                            act = "attack"; btnTxt = "Aanvallen"; cost = "150💰";
-                            time = loc.attackDuration;
-                            if (!loc.canAttackBasis) { btnTxt = "Val eerst alle mijnen aan van dit team."; disabled = true; }
-                        }
-                    } else {
-                        if (rawOwner === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
-                        else if (isOwner) {
-                            act = "upgrade";
-                            if (loc.upgrade === "standaard") { btnTxt = "Gewapende Arbeiders"; cost = "50🌾, 50💰"; }
-                            else if (loc.upgrade === "Gewapende Arbeiders") { btnTxt = "Buitenpost"; cost = "75🪵, 75🪨"; }
-                            else { btnTxt = "MAX"; act = ""; }
-                            time = 30;
-                        } else {
-                            act = "attack"; btnTxt = "Sloop deze mijn"; cost = "75💰"; time = loc.attackDuration;
-                        }
-                    }
+                    if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; }
+                    else if (isOwner) { act = "upgrade"; btnTxt = "Upgraden"; cost = "Varieert"; }
+                    else { act = "attack"; btnTxt = "Aanvallen"; cost = "150💰"; time = loc.attackDuration; }
 
-                    // UITROEPTEKEN LOGICA MET NIEUWE STIJL
                     let blinkIcon = "";
-                    if (currentStatus.toLowerCase() !== "ok") {
-                        let bClass = "";
-                        const s = currentStatus.toLowerCase();
-                        if (s.includes("geclaimd")) bClass = "status-claim";
-                        else if (s.includes("aangevallen") || s.includes("attack")) bClass = "status-attack";
-                        else if (s.includes("upgrad") || s.includes("geüpgraded")) bClass = "status-upgrade";
-                        if (bClass !== "") blinkIcon = `<div class="warning-blink ${bClass}">!</div>`;
+                    if (loc.status !== "ok") {
+                        let bC = loc.status.includes("aanval") ? "status-attack" : (loc.status.includes("claim") ? "status-claim" : "status-upgrade");
+                        blinkIcon = `<div class="warning-blink ${bC}">!</div>`;
                     }
 
-                    const iconHtml = `<div class="custom-icon-container">${blinkIcon}<div class="map-emoji">${emoji}</div></div>`;
-                    
-                    const popupHTML = `<div style="text-align:center; min-width:180px; color:#fff; font-family:'Cinzel',serif;">
-                        <b style="font-size:1.1rem; letter-spacing:1px; color:#fbbf24;">${loc.type}</b><br>
-                        <span style="font-size:0.8rem; opacity:0.8;">${loc.upgrade}</span>
+                    const popupHTML = `<div style="text-align:center; min-width:180px; color:#fff;">
+                        <b style="font-size:1.1rem; color:#fbbf24;">${loc.type}</b><br>
+                        <span style="font-size:0.8rem; opacity:0.8;">Eigenaar: ${loc.eigenaar}</span>
                         <hr style="margin:8px 0; opacity:0.2;">
-                        <div style="text-align:left; font-size:0.85rem; margin-bottom:10px; line-height:1.4;">
-                            Eigenaar: <span style="color:${loc.kleur || '#fff'}; font-weight:bold;">${rawOwner === "geen" ? "Niemand" : rawOwner}</span><br>
-                            Status: <span style="font-weight:bold; color:${currentStatus.toLowerCase() === 'ok' ? '#22c55e' : '#fbbf24'}">${currentStatus}</span>
-                        </div>
-                        <span style="font-size:0.8rem; display:block; margin-bottom:8px; opacity:0.7;">Kost: ${cost}</span>
-                        <button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button>
+                        <div style="font-size:0.85rem; margin-bottom:10px;">Status: ${loc.status}</div>
+                        <button class="btn-interact ${isLocked ? 'btn-locked' : ''}" 
+                                onclick="startInteract(${loc.id},'${act}',${time},[${coords}],${isLocked})">
+                                ${btnTxt}
+                        </button>
                     </div>`;
 
-                    // CIRKEL TEKENEN
-                    L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
-                    
-                    // MARKER (EMOJI + !) TEKENEN
-                    L.marker(coords, { 
-                        icon: L.divIcon({ 
-                            className:'custom-div-icon', 
-                            html: iconHtml, 
-                            iconSize: [60, 60], 
-                            iconAnchor: [30, 30] 
-                        }), 
-                        interactive: false 
-                    }).addTo(locationLayer);
-                    
-                    markersRef[loc.id] = { coords };
+                    L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4 }).addTo(locationLayer).bindPopup(popupHTML);
+                    L.marker(coords, { icon: L.divIcon({ className:'', html: `<div class="custom-icon-container">${blinkIcon}<div style="font-size:32px;">${emoji}</div></div>`, iconSize: [60,60], iconAnchor: [30,30] }), interactive: false }).addTo(locationLayer);
                 });
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
 
-        async function startInteract(id, act, duration, coords) {
-            if (isInteracting) return showStatus("❌ Al bezig!");
+        async function startInteract(id, act, duration, coords, isLocked) {
+            // DE BELANGRIJKE MELDING HIER:
+            if (isLocked) {
+                showStatus("⚠️ Je bent te ver weg! (Blijf binnen 25m)");
+                return;
+            }
+            if (isInteracting) return showStatus("❌ Je bent al bezig!");
+
             try { await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`); } catch(e) {}
+            
             const endTimestamp = Date.now() + (duration * 1000);
             localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
             runTimerCycle();
@@ -453,15 +339,20 @@
             isInteracting = true;
             const { id, act, endTimestamp, coords } = JSON.parse(data);
             const over = Math.ceil((endTimestamp - Date.now()) / 1000);
+
             if (over <= 0) { finishInteract(id, act); return; }
+
+            // Check tijdens het lopen
             if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
-                localStorage.removeItem('activeInteract'); isInteracting = false;
-                showStatus("⚠️ Te ver weg!");
+                localStorage.removeItem('activeInteract'); 
+                isInteracting = false;
+                showStatus("⚠️ Interactie afgebroken: Je liep te ver weg!");
                 fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
                 updateGame(); return;
             }
+
             const btn = document.getElementById(`btn-${id}`);
-            if (btn) { btn.disabled = true; btn.innerText = `${over}s`; btn.style.background = "#d97706"; }
+            if (btn) { btn.innerText = `${over}s`; btn.style.background = "#d97706"; }
             setTimeout(runTimerCycle, 1000);
         }
 
@@ -480,17 +371,7 @@
             else userMarker.setLatLng(e.latlng);
         });
 
-        window.onload = () => { 
-            fetchStartTime(); updateGame(); 
-            setInterval(updateGame, 15000); 
-            const active = localStorage.getItem('activeInteract');
-            if (active) {
-                const parsed = JSON.parse(active);
-                if (Date.now() > parsed.endTimestamp) localStorage.removeItem('activeInteract');
-                else runTimerCycle();
-            }
-            locateUser(); 
-        };
+        window.onload = () => { fetchStartTime(); updateGame(); setInterval(updateGame, 15000); locateUser(); };
     </script>
 </body>
 </html>
