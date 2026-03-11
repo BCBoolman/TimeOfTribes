@@ -40,7 +40,7 @@
         .game-ui-top {
             position: fixed;
             top: 0; width: 100%;
-            z-index: 100;
+            z-index: 1000; /* Altijd boven alles */
             pointer-events: none;
         }
 
@@ -79,7 +79,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* UNIFORME KNOPPEN */
+        /* UNIFORME KNOPPEN (LOGIN STIJL) */
         .game-btn, .btn-interact {
             background: rgba(0, 8, 20, 0.9);
             backdrop-filter: blur(5px);
@@ -106,12 +106,6 @@
             border-color: #fff;
         }
 
-        .btn-interact:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            filter: grayscale(1);
-        }
-
         .game-ui-bottom {
             position: fixed;
             bottom: 30px;
@@ -119,7 +113,7 @@
             display: flex;
             justify-content: center;
             gap: 12px;
-            z-index: 100;
+            z-index: 1000;
             padding: 0 15px;
             pointer-events: none;
         }
@@ -140,9 +134,7 @@
             padding: 5px;
         }
 
-        .leaflet-popup-tip {
-            background: rgba(0, 8, 20, 0.95);
-        }
+        .leaflet-popup-tip { background: rgba(0, 8, 20, 0.95); }
 
         .modal {
             position: fixed;
@@ -165,50 +157,66 @@
             align-items: center;
         }
 
-        .modal-body {
-            padding: 25px;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
         .close-modal {
             background: none; border: none; color: #ff4444; font-size: 1.5rem; cursor: pointer; font-weight: bold;
         }
 
         /* =========================================
-           STATUS & MARKERS
+           STATUS & MARKERS (HET PROBLEEMGEBIED)
            ========================================= */
+        .custom-icon-container {
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            width: 60px !important; 
+            height: 60px !important; 
+            position: relative;
+            overflow: visible !important; /* Zorgt dat het uitroepteken buiten het kader mag */
+            z-index: 500 !important;
+        }
+
+        .map-emoji {
+            font-size: 32px;
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,1));
+            z-index: 501;
+        }
+
+        /* UITROEPTEKEN FIX: Hogere z-index en betere positie */
+        .warning-blink {
+            position: absolute;
+            top: -35px; /* Hoger boven de emoji */
+            left: 50%;
+            transform: translateX(-50%);
+            animation: blinker 0.8s linear infinite;
+            font-weight: 900; 
+            font-size: 48px; /* Lekker groot */
+            z-index: 9999 !important; /* Forceer boven alles */
+            /* Krachtige omlijning voor zichtbaarheid */
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px 0px 10px rgba(0,0,0,1);
+        }
+
+        @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+        /* Kleuren voor het uitroepteken */
+        .status-claim { color: #000; } 
+        .status-attack { color: #ff0000; }
+        .status-upgrade { color: #00ff00; }
+
         #status-bar {
             position: fixed; top: 135px; left: 50%;
             transform: translateX(-50%);
             background: rgba(220, 38, 38, 0.9);
             color: white; padding: 10px 20px;
             font-size: 0.9rem; font-weight: bold;
-            z-index: 150; display: none;
+            z-index: 1500; display: none;
             border: 1px solid white;
         }
-
-        .custom-icon-container {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 60px !important; height: 60px !important; position: relative;
-        }
-
-        .map-emoji {
-            font-size: 32px;
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,1));
-        }
-
-        .warning-blink {
-            animation: blinker 1s linear infinite;
-            font-weight: bold; font-size: 42px;
-            position: absolute; top: -25px; z-index: 10;
-        }
-
-        @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-
-        /* Status kleuren in de popup */
-        .text-status-active { color: #fbbf24; font-weight: bold; } /* Oranje-achtig voor actie */
-        .text-status-ok { color: #22c55e; } /* Groen voor OK */
 
         #game-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -222,7 +230,7 @@
 
     <div id="game-overlay">
         <h1 style="font-size: 2rem; letter-spacing: 5px;">Time of Tribes</h1>
-        <p id="overlay-msg" style="font-size: 1.2rem; margin-top: 20px;">Laden...</p>
+        <p id="overlay-msg" style="font-size: 1.2rem; margin-top: 20px;">Verbinding maken...</p>
     </div>
 
     <div id="status-bar">Melding...</div>
@@ -248,9 +256,7 @@
             <h2 style="font-size: 1.2rem; letter-spacing: 2px;">Handelspost</h2>
             <button class="close-modal" onclick="closeModal('tradeModal')">✕</button>
         </div>
-        <div class="modal-body">
-            <p style="text-align:center; opacity:0.6;">Geen handelaren beschikbaar...</p>
-        </div>
+        <div class="modal-body"><p style="text-align:center; opacity:0.6;">Nog geen handelaren...</p></div>
     </div>
 
     <div id="missionModal" class="modal">
@@ -258,9 +264,7 @@
             <h2 style="font-size: 1.2rem; letter-spacing: 2px;">Missies</h2>
             <button class="close-modal" onclick="closeModal('missionModal')">✕</button>
         </div>
-        <div class="modal-body">
-            <p style="text-align:center; opacity:0.6;">Geen actieve missies...</p>
-        </div>
+        <div class="modal-body"><p style="text-align:center; opacity:0.6;">Geen missies...</p></div>
     </div>
 
     <div class="game-ui-bottom">
@@ -357,7 +361,7 @@
                     const rawOwner = loc.eigenaar || "geen";
                     const isOwner = rawOwner.toLowerCase() === userTeam.toLowerCase();
                     const currentStatus = loc.status || "ok";
-                    const statusClass = currentStatus.toLowerCase() === "ok" ? "text-status-ok" : "text-status-active";
+                    const statusClassLabel = currentStatus.toLowerCase() === "ok" ? "text-status-ok" : "text-status-active";
                     
                     let emoji = "🏰", btnTxt = "N/A", time = 0, act = "", cost = "", disabled = (dist > 25);
                     if (loc.type.toLowerCase().includes("voedsel")) emoji = "🌾";
@@ -390,7 +394,7 @@
                         }
                     }
 
-                    // UITROEPTEKEN LOGICA
+                    // UITROEPTEKEN LOGICA MET NIEUWE STIJL
                     let blinkIcon = "";
                     if (currentStatus.toLowerCase() !== "ok") {
                         let bClass = "";
@@ -403,22 +407,32 @@
 
                     const iconHtml = `<div class="custom-icon-container">${blinkIcon}<div class="map-emoji">${emoji}</div></div>`;
                     
-                    const displayOwner = rawOwner === "geen" ? "Niemand" : rawOwner;
-
                     const popupHTML = `<div style="text-align:center; min-width:180px; color:#fff; font-family:'Cinzel',serif;">
                         <b style="font-size:1.1rem; letter-spacing:1px; color:#fbbf24;">${loc.type}</b><br>
                         <span style="font-size:0.8rem; opacity:0.8;">${loc.upgrade}</span>
                         <hr style="margin:8px 0; opacity:0.2;">
                         <div style="text-align:left; font-size:0.85rem; margin-bottom:10px; line-height:1.4;">
-                            Eigenaar: <span style="color:${loc.kleur || '#fff'}; font-weight:bold;">${displayOwner}</span><br>
-                            Status: <span class="${statusClass}">${currentStatus}</span>
+                            Eigenaar: <span style="color:${loc.kleur || '#fff'}; font-weight:bold;">${rawOwner === "geen" ? "Niemand" : rawOwner}</span><br>
+                            Status: <span style="font-weight:bold; color:${currentStatus.toLowerCase() === 'ok' ? '#22c55e' : '#fbbf24'}">${currentStatus}</span>
                         </div>
                         <span style="font-size:0.8rem; display:block; margin-bottom:8px; opacity:0.7;">Kost: ${cost}</span>
                         <button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button>
                     </div>`;
 
+                    // CIRKEL TEKENEN
                     L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
-                    L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: iconHtml, iconSize: [60, 60], iconAnchor: [30, 30] }), interactive: false }).addTo(locationLayer);
+                    
+                    // MARKER (EMOJI + !) TEKENEN
+                    L.marker(coords, { 
+                        icon: L.divIcon({ 
+                            className:'custom-div-icon', 
+                            html: iconHtml, 
+                            iconSize: [60, 60], 
+                            iconAnchor: [30, 30] 
+                        }), 
+                        interactive: false 
+                    }).addTo(locationLayer);
+                    
                     markersRef[loc.id] = { coords };
                 });
             } catch(e) { console.error(e); }
