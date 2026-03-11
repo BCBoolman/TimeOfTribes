@@ -282,11 +282,36 @@
             else userMarker.setLatLng(e.latlng);
         });
 
-        window.onload = () => { 
+window.onload = () => { 
             fetchStartTime(); 
             updateGame(); 
+            
+            // Ververs de kaart en grondstoffen elke 15 seconden
             setInterval(updateGame, 15000); 
-            if (localStorage.getItem('activeInteract')) runTimerCycle(); 
+
+            // CONTROLE OP VASTGELOPEN ACTIES
+            const active = localStorage.getItem('activeInteract');
+            if (active) {
+                try {
+                    const parsed = JSON.parse(active);
+                    const nu = Date.now();
+                    
+                    // Als de eindtijd van de actie in het verleden ligt, 
+                    // is de actie verlopen of mislukt. We maken de weg vrij.
+                    if (nu > parsed.endTimestamp) {
+                        console.log("Oude interactie opgeruimd.");
+                        localStorage.removeItem('activeInteract');
+                        isInteracting = false;
+                    } else {
+                        // De actie is nog bezig, hervat de visuele timer
+                        runTimerCycle(); 
+                    }
+                } catch (e) {
+                    // Bij een leesfout in het geheugen: voor de zekerheid wissen
+                    localStorage.removeItem('activeInteract');
+                }
+            }
+
             locateUser(); 
         };
     </script>
