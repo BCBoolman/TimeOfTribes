@@ -8,6 +8,8 @@
     <style>
         body { margin: 0; padding: 0; background: #1a1a1a; font-family: sans-serif; overflow: hidden; color: white; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
+        
+        /* UI Elementen */
         .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
         .timer-row { display: flex; justify-content: space-between; background: rgba(0,0,0,0.9); padding: 12px; border-bottom: 1px solid #444; pointer-events: auto; }
         .resource-row { display: flex; justify-content: space-around; background: rgba(30,30,30,0.9); padding: 8px; color: #fbbf24; pointer-events: auto; font-size: 0.9rem; font-weight: bold; }
@@ -16,9 +18,24 @@
         .btn-interact { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-interact:disabled { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
         
-        .custom-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px !important; height: 50px !important; }
-        .map-emoji { font-size: 28px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); line-height: 1; }
-        .warning-blink { animation: blinker 0.8s linear infinite; color: #ff4444; font-weight: bold; font-size: 24px; filter: drop-shadow(0px 0px 3px black); margin-bottom: -5px; }
+        /* Iconen en Markers */
+        .custom-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px !important; height: 50px !important; position: relative; }
+        .map-emoji { font-size: 28px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); line-height: 1; z-index: 1; }
+        
+        /* Status Uitroeptekens */
+        .warning-blink { 
+            animation: blinker 0.8s linear infinite; 
+            font-weight: bold; 
+            font-size: 32px; 
+            line-height: 1;
+            position: absolute;
+            top: -22px; 
+            z-index: 10;
+        }
+        .status-claim { color: #000000; filter: drop-shadow(0px 0px 2px white); } 
+        .status-attack { color: #ff4444; filter: drop-shadow(0px 0px 2px black); }
+        .status-upgrade { color: #22c55e; filter: drop-shadow(0px 0px 2px black); }
+
         @keyframes blinker { 50% { opacity: 0; } }
         
         .day-timer { color: #facc15; font-family: monospace; font-weight: bold; }
@@ -53,7 +70,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzDyQEr_eO-yxO7r33fB9tL8WksYjEypBAwOvB4FvIsfwd0wh-mDnIQF_hwWxhM6BxFZA/exec"; // VERVANG DEZE URL!
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzDyQEr_eO-yxO7r33fB9tL8WksYjEypBAwOvB4FvIsfwd0wh-mDnIQF_hwWxhM6BxFZA/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         const locationLayer = L.layerGroup().addTo(map);
@@ -97,7 +114,6 @@
             const ds = Math.floor((restMs % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
 
-            // 1 Minuut waarschuwing voor consumptie
             if (dm === "01" && ds === "00" && !warnedForConsumption) {
                 alert("⚠️ LET OP: De dagconsumptie wordt over 1 minuut afgeschreven!");
                 warnedForConsumption = true;
@@ -106,29 +122,27 @@
             if (dm === "00" && ds === "00") setTimeout(updateGame, 1500);
         }
 
-async function startInteract(id, act, duration, coords) {
-    if (isInteracting) return alert("Je bent al bezig met een actie!");
-    
-    // NIEUW: Meld de server direct dat we beginnen voor de status-update
-    try {
-        await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`);
-    } catch(e) { console.error("Kon status niet updaten"); }
+        async function startInteract(id, act, duration, coords) {
+            if (isInteracting) return alert("Je bent al bezig met een actie!");
+            
+            try {
+                await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`);
+            } catch(e) { console.error("Kon status niet updaten"); }
 
-    const endTimestamp = Date.now() + (duration * 1000);
-    localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
-    
-    runTimerCycle();
-    updateGame(); // Ververs kaart direct om de warning te zien
-}
+            const endTimestamp = Date.now() + (duration * 1000);
+            localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
+            
+            runTimerCycle();
+            updateGame(); 
+        }
 
-async function stopInteractRemote(id, msg) {
-    localStorage.removeItem('activeInteract');
-    isInteracting = false;
-    alert(msg);
-    // Meld de server dat het geannuleerd is
-    await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
-    updateGame();
-}
+        async function stopInteractRemote(id, msg) {
+            localStorage.removeItem('activeInteract');
+            isInteracting = false;
+            alert(msg);
+            await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
+            updateGame();
+        }
 
         function runTimerCycle() {
             const data = localStorage.getItem('activeInteract');
@@ -140,9 +154,7 @@ async function stopInteractRemote(id, msg) {
             if (over <= 0) { finishInteract(id, act); return; }
             if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
                 alert("Buiten bereik! Actie afgebroken.");
-                localStorage.removeItem('activeInteract');
-                isInteracting = false;
-                updateGame();
+                stopInteractRemote(id, "Buiten bereik!");
                 return;
             }
 
@@ -206,7 +218,7 @@ async function stopInteractRemote(id, msg) {
                         } else {
                             act = "attack"; btnTxt = "Basis Aanvallen"; cost = "150💰";
                             time = loc.attackDuration;
-                            if (!loc.canAttackBasis) { btnTxt = "Vernietig eerst alle mijnen van dit team"; disabled = true; }
+                            if (!loc.canAttackBasis) { btnTxt = "Sloop eerst de mijnen"; disabled = true; }
                         }
                     } else {
                         if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Mijn Bouwen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
@@ -222,10 +234,33 @@ async function stopInteractRemote(id, msg) {
                         }
                     }
 
-                    const popupHTML = `<div class="popup-content"><b>${loc.type}</b><br><small>Niveau: ${loc.upgrade}</small><br><small>Eigenaar: ${loc.eigenaar}</small><hr><span style="font-size:0.75rem;">Kost: ${cost}</span><button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button></div>`;
+                    // STATUS UITROEPTEKEN LOGICA
+                    let statusIcon = "";
+                    if (loc.status && loc.status !== "ok") {
+                        let statusClass = "";
+                        const s = loc.status.toLowerCase();
+                        if (s.includes("claim")) statusClass = "status-claim";
+                        else if (s.includes("aanval") || s.includes("attack")) statusClass = "status-attack";
+                        else if (s.includes("upgrad")) statusClass = "status-upgrade";
+                        
+                        if (statusClass !== "") statusIcon = `<div class="warning-blink ${statusClass}">!</div>`;
+                    }
+
+                    const iconHtml = `<div class="custom-icon-container">${statusIcon}<div class="map-emoji">${emoji}</div></div>`;
+                    const popupHTML = `<div class="popup-content"><b>${loc.type}</b><br><small>Level: ${loc.upgrade}</small><br><small>Team: ${loc.eigenaar}</small><hr><span style="font-size:0.75rem;">Kost: ${cost}</span><button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button></div>`;
 
                     L.circle(coords, { radius: 15, color: loc.kleur, fillOpacity: 0.3 }).addTo(locationLayer).bindPopup(popupHTML);
-                    L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: `<div class="custom-icon-container"><div class="map-emoji">${emoji}</div></div>`, iconSize: [50, 50], iconAnchor: [25, 25] }), interactive: false }).addTo(locationLayer);
+                    
+                    L.marker(coords, { 
+                        icon: L.divIcon({ 
+                            className:'custom-div-icon', 
+                            html: iconHtml, 
+                            iconSize: [50, 50], 
+                            iconAnchor: [25, 25] 
+                        }), 
+                        interactive: false 
+                    }).addTo(locationLayer);
+
                     markersRef[loc.id] = { coords };
                 });
             } catch(e) { console.error(e); }
