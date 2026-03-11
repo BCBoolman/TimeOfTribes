@@ -372,25 +372,25 @@
                         if (isOwner) {
                             act = "upgrade";
                             if (loc.upgrade === "standaard") { btnTxt = "Wachtposten"; cost = "100🪵, 50🪨"; }
-                            else if (loc.upgrade === "Wachtposten") { btnTxt = "Muur"; cost = "150🪵, 150🪨"; }
-                            else if (loc.upgrade === "Palissademuur") { btnTxt = "Fort"; cost = "200🪵, 200🪨, 100💰"; }
+                            else if (loc.upgrade === "Wachtposten") { btnTxt = "Palissadeuur"; cost = "150🪵, 150🪨"; }
+                            else if (loc.upgrade === "Palissademuur") { btnTxt = "Fortificaties"; cost = "200🪵, 200🪨, 100💰"; }
                             else { btnTxt = "MAX"; act = ""; }
                             time = 30;
                         } else {
                             act = "attack"; btnTxt = "Aanvallen"; cost = "150💰";
                             time = loc.attackDuration;
-                            if (!loc.canAttackBasis) { btnTxt = "Mijnen eerst"; disabled = true; }
+                            if (!loc.canAttackBasis) { btnTxt = "Val eerst alle mijnen aan van dit team."; disabled = true; }
                         }
                     } else {
                         if (rawOwner === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
                         else if (isOwner) {
                             act = "upgrade";
-                            if (loc.upgrade === "standaard") { btnTxt = "Arbeiders"; cost = "50🌾, 50💰"; }
+                            if (loc.upgrade === "standaard") { btnTxt = "Gewapende Arbeiders"; cost = "50🌾, 50💰"; }
                             else if (loc.upgrade === "Gewapende Arbeiders") { btnTxt = "Buitenpost"; cost = "75🪵, 75🪨"; }
                             else { btnTxt = "MAX"; act = ""; }
                             time = 30;
                         } else {
-                            act = "attack"; btnTxt = "Sloop"; cost = "75💰"; time = loc.attackDuration;
+                            act = "attack"; btnTxt = "Sloop deze mijn"; cost = "75💰"; time = loc.attackDuration;
                         }
                     }
 
