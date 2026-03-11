@@ -3,145 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Time of Tribes</title>
+    <title>Time of Tribes - Game</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin: 0; padding: 0; background: #1a1a1a; font-family: sans-serif; overflow: hidden; color: white; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
-        
-        /* UI Elementen */
-        .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 100; pointer-events: none; }
-        .timer-row { display: flex; justify-content: space-between; background: rgba(0,0,0,0.9); padding: 12px; border-bottom: 1px solid #444; pointer-events: auto; }
-        .resource-row { display: flex; justify-content: space-around; background: rgba(30,30,30,0.9); padding: 8px; color: #fbbf24; pointer-events: auto; font-size: 0.9rem; font-weight: bold; }
-        
-        /* NIEUW: Statusbalk voor meldingen (vervangt alert) */
-        #status-bar { 
-            position: fixed; 
-            top: 85px; /* Onder de resource-row */
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(220, 38, 38, 0.9); /* Rood voor waarschuwingen */
-            color: white; 
-            padding: 8px 16px; 
-            border-radius: 20px; 
-            font-size: 0.85rem; 
-            font-weight: bold; 
-            z-index: 150; 
-            display: none; /* Standaard verborgen */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        /* =========================================
+           BASIS STYLING (THEMA LOGINPAGINA)
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cinzel', serif;
+        }
+
+        body {
+            background: radial-gradient(circle, #001529 0%, #000814 100%);
+            height: 100vh;
+            width: 100vw;
+            color: #d1d1d1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Rook effect op de achtergrond */
+        .clouds-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 20% 50%, rgba(100, 100, 100, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 30%, rgba(0, 0, 0, 0.4) 0%, transparent 60%);
+            filter: blur(60px);
+            animation: smoke 20s infinite alternate linear;
+        }
+
+        @keyframes smoke {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+            50% { transform: scale(1.2) translate(-2%, -5%); opacity: 0.8; }
+            100% { transform: scale(1.1) translate(3%, 2%); opacity: 0.5; }
+        }
+
+        /* =========================================
+           MAP & UI LAYERS
+           ========================================= */
+        #map {
+            position: absolute;
+            top: 0; bottom: 0; width: 100%;
+            z-index: 1; /* Kaart onderop */
+        }
+
+        /* Navigatie Balken */
+        .game-ui-top {
+            position: fixed;
+            top: 0; width: 100%;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .timer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 8, 20, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             pointer-events: auto;
         }
 
-        .game-ui-bottom { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 10px; z-index: 100; padding: 0 15px; box-sizing: border-box; }
-        .game-btn { background: #333; color: white; border: 1px solid #555; padding: 14px; border-radius: 8px; flex: 1; font-weight: bold; pointer-events: auto; }
-        .btn-interact { background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-interact:disabled { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
-        
-        /* Iconen en Markers */
-        .custom-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px !important; height: 50px !important; position: relative; }
-        .map-emoji { font-size: 28px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); line-height: 1; z-index: 1; }
-        
-        /* Status Uitroeptekens - REPARATIE: Knipperen toegevoegd */
-        .warning-blink { 
-            animation: blinker 1s linear infinite; /* REPARATIE: Animatie-naam klopt nu */
-            font-weight: bold; 
-            font-size: 36px; /* Iets groter voor betere zichtbaarheid */
-            line-height: 1;
-            position: absolute;
-            top: -24px; 
-            z-index: 10;
+        .top-logo {
+            height: 40px;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
         }
-        .status-claim { color: #000000; filter: drop-shadow(0px 0px 2px white); } 
-        .status-attack { color: #ff4444; filter: drop-shadow(0px 0px 2px black); }
-        .status-upgrade { color: #22c55e; filter: drop-shadow(0px 0px 2px black); }
 
-        /* REPARATIE: De animatie-keyframes definitie ontbrak */
-        @keyframes blinker { 
-            0% { opacity: 1; }
-            50% { opacity: 0; }
-            100% { opacity: 1; }
+        .resource-row {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px;
+            color: #fbbf24;
+            pointer-events: auto;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
-        
-        .day-timer { color: #facc15; font-family: monospace; font-weight: bold; }
-        .popup-content { text-align: center; color: #333; min-width: 180px; }
-        #game-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+        /* Knoppen Onderin */
+        .game-ui-bottom {
+            position: fixed;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 100;
+            padding: 0 15px;
+            pointer-events: none;
+        }
+
+        .game-btn {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            color: #d1d1d1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 5px;
+            border-radius: 0; /* Minimalistisch vierkant */
+            flex: 1;
+            font-weight: bold;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: 0.3s;
+        }
+
+        .game-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+            color: #fff;
+        }
+
+        /* =========================================
+           MODALS (POP-UPS)
+           ========================================= */
+        .modal {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%; max-width: 400px;
+            background: rgba(0, 8, 20, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0,0,0,1);
+        }
+
+        .modal-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .close-modal {
+            background: none; border: none; color: #ff4444; font-size: 1.2rem; cursor: pointer;
+        }
+
+        /* =========================================
+           GAME ELEMENTEN (MARKERS & STATUS)
+           ========================================= */
+        #status-bar {
+            position: fixed; top: 110px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(220, 38, 38, 0.8);
+            color: white; padding: 6px 15px;
+            border-radius: 0; font-size: 0.75rem;
+            z-index: 150; display: none;
+            letter-spacing: 1px;
+        }
+
+        .custom-icon-container {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 50px !important; height: 50px !important; position: relative;
+        }
+
+        .map-emoji {
+            font-size: 28px;
+            filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8));
+        }
+
+        .warning-blink {
+            animation: blinker 1s linear infinite;
+            font-weight: bold; font-size: 34px;
+            position: absolute; top: -20px; z-index: 10;
+        }
+
+        @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+        .status-claim { color: #000000; filter: drop-shadow(0px 0px 3px white); } 
+        .status-attack { color: #ff4444; filter: drop-shadow(0px 0px 3px black); }
+        .status-upgrade { color: #22c55e; filter: drop-shadow(0px 0px 3px black); }
+
+        /* Popup buttons op de kaart */
+        .btn-interact {
+            background: none; border: 1px solid #fff; color: #fff;
+            padding: 8px; width: 100%; margin-top: 10px;
+            font-family: 'Cinzel', serif; font-size: 0.7rem; cursor: pointer;
+        }
+
+        #game-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 5, 15, 0.95); z-index: 9999;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; letter-spacing: 3px;
+        }
     </style>
 </head>
 <body>
 
+    <div class="clouds-overlay"></div>
+
     <div id="game-overlay">
-        <h1 id="overlay-title">Spel Status</h1>
-        <p id="overlay-msg">Laden...</p>
+        <h1 id="overlay-title">Time of Tribes</h1>
+        <p id="overlay-msg">Verbinding maken met de stammen...</p>
     </div>
 
     <div id="status-bar">Melding...</div>
 
     <div class="game-ui-top">
         <div class="timer-row">
-            <div>⏱️ <span id="gameClock">02:00:00</span></div>
-            <div>☀️ Dag: <span id="dayTimer" class="day-timer">15:00</span></div>
+            <div style="font-size: 0.8rem;">⏱️ <span id="gameClock">02:00:00</span></div>
+            <img src="images/Time of Tribes - logo.svg" class="top-logo" alt="Logo">
+            <div style="font-size: 0.8rem;">☀️ <span id="dayTimer" style="color:#facc15">15:00</span></div>
         </div>
         <div class="resource-row">
-            <div>🌾 <span id="food">0</span></div> <div>🪵 <span id="wood">0</span></div>
-            <div>🪨 <span id="stone">0</span></div> <div>💰 <span id="coins">0</span></div>
+            <div>🌾 <span id="food">0</span></div> 
+            <div>🪵 <span id="wood">0</span></div>
+            <div>🪨 <span id="stone">0</span></div> 
+            <div>💰 <span id="coins">0</span></div>
         </div>
     </div>
 
     <div id="map"></div>
 
+    <div id="tradeModal" class="modal">
+        <div class="modal-header">
+            <h2 style="font-size: 1rem; letter-spacing: 2px;">Handelspost</h2>
+            <button class="close-modal" onclick="closeModal('tradeModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="text-align:center; opacity:0.6;">Geen handelaren in de buurt...</p>
+        </div>
+    </div>
+
+    <div id="missionModal" class="modal">
+        <div class="modal-header">
+            <h2 style="font-size: 1rem; letter-spacing: 2px;">Missies</h2>
+            <button class="close-modal" onclick="closeModal('missionModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="text-align:center; opacity:0.6;">Geen actieve opdrachten...</p>
+        </div>
+    </div>
+
     <div class="game-ui-bottom">
-        <button class="game-btn" onclick="locateUser()">GPS</button>
-        <button class="game-btn" onclick="autoOpenInteract()">INTERACTIE</button>
+        <button class="game-btn" onclick="locateUser()">📍 GPS</button>
+        <button class="game-btn" onclick="openModal('tradeModal')">🤝 Handel</button>
+        <button class="game-btn" onclick="openModal('missionModal')">📜 Missies</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const scriptURL = "https://script.google.com/macros/s/AKfycbxPFzpgc05W4SXZtD5T3cxXZoBzMIxUFI316UWfibVdtp5NencKdi0fPPYyPcYV47JWLQ/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        const locationLayer = L.layerGroup().addTo(map);
         
+        // Donkere kaartstijl passend bij thema
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        
+        const locationLayer = L.layerGroup().addTo(map);
         let userMarker, userTeam = "", markersRef = {}, isInteracting = false, gameStartTime = null, warnedForConsumption = false;
 
-        // NIEUW: Functie om de statusbalk te tonen (vervangt alert)
         function showStatus(msg, duration = 4000) {
             const bar = document.getElementById('status-bar');
             bar.innerText = msg;
             bar.style.display = "block";
-            // Verberg automatisch na een paar seconden
             setTimeout(() => { bar.style.display = "none"; }, duration);
         }
 
-async function fetchStartTime() {
-    try {
-        const r = await fetch(`${scriptURL}?action=getStartTime`);
-        const d = await r.json();
-        
-        if (d.status === "waiting") {
-            return showOverlay("Wachten...", "Spel start om " + new Date(d.startTime).toLocaleTimeString());
+        // --- POPUP LOGICA ---
+        function openModal(id) {
+            document.getElementById(id).style.display = "flex";
         }
-        
-        if (d.status === "finished") {
-            return showOverlay("Afgelopen", "Het spel is voorbij.");
+        function closeModal(id) {
+            document.getElementById(id).style.display = "none";
         }
 
-        gameStartTime = d.startTime;
-
-        // Check of we lokaal ook al over de tijd zijn
-        const nu = Date.now();
-        const resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
-        
-        if (resterend > 0) {
-            hideOverlay();
-        } else {
-            showOverlay("Einde Spel", "De tijd is om!");
+        // --- GAME LOGICA ---
+        async function fetchStartTime() {
+            try {
+                const r = await fetch(`${scriptURL}?action=getStartTime`);
+                const d = await r.json();
+                if (d.status === "waiting") return showOverlay("Wachten...", "Start: " + new Date(d.startTime).toLocaleTimeString());
+                if (d.status === "finished") return showOverlay("Afgelopen", "Het spel is voorbij.");
+                gameStartTime = d.startTime;
+                const nu = Date.now();
+                const resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
+                if (resterend > 0) hideOverlay(); else showOverlay("Einde Spel", "De tijd is om!");
+                heartbeat();
+            } catch(e) { setTimeout(fetchStartTime, 5000); }
         }
-
-        heartbeat();
-    } catch(e) { 
-        setTimeout(fetchStartTime, 5000); 
-    }
-}
 
         function showOverlay(title, msg) {
             document.getElementById('game-overlay').style.display = "flex";
@@ -155,7 +322,6 @@ async function fetchStartTime() {
         function updateClocks() {
             if (!gameStartTime) return;
             const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
-
             if (resterend <= 0) return showOverlay("Einde Spel", "De tijd is om!");
 
             const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
@@ -169,66 +335,11 @@ async function fetchStartTime() {
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
 
             if (dm === "01" && ds === "00" && !warnedForConsumption) {
-                showStatus("⚠️ Consumptie over 1 minuut!"); // VERVANGEN: alert -> showStatus
+                showStatus("⚠️ Consumptie over 1 minuut!");
                 warnedForConsumption = true;
             }
             if (dm === "14") warnedForConsumption = false; 
             if (dm === "00" && ds === "00") setTimeout(updateGame, 1500);
-        }
-
-        async function startInteract(id, act, duration, coords) {
-            if (isInteracting) return showStatus("❌ Je bent al bezig!"); // VERVANGEN: alert -> showStatus
-            
-            try {
-                await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`);
-            } catch(e) { console.error("Kon status niet updaten"); }
-
-            const endTimestamp = Date.now() + (duration * 1000);
-            localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
-            
-            runTimerCycle();
-            updateGame(); 
-        }
-
-        async function stopInteractRemote(id, msg) {
-            localStorage.removeItem('activeInteract');
-            isInteracting = false;
-            showStatus("⚠️ " + msg); // VERVANGEN: alert -> showStatus
-            await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
-            updateGame();
-        }
-
-        function runTimerCycle() {
-            const data = localStorage.getItem('activeInteract');
-            if (!data) { isInteracting = false; return; }
-            isInteracting = true;
-            const { id, act, endTimestamp, coords } = JSON.parse(data);
-            const over = Math.ceil((endTimestamp - Date.now()) / 1000);
-            
-            if (over <= 0) { finishInteract(id, act); return; }
-            if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
-                // VERVANGEN: alert verwijderd, wordt nu direct geannuleerd via stopInteractRemote
-                stopInteractRemote(id, "Buiten bereik! Actie afgebroken.");
-                return;
-            }
-
-            const btn = document.getElementById(`btn-${id}`);
-            if (btn) {
-                btn.disabled = true;
-                btn.innerText = `${act.toUpperCase()}... ${over}s`;
-                btn.style.background = "#d97706";
-            }
-            setTimeout(runTimerCycle, 1000);
-        }
-
-        async function finishInteract(id, act) {
-            const speler = localStorage.getItem("tribe_player");
-            const r = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&team=${encodeURIComponent(userTeam)}&naam=${encodeURIComponent(speler)}`);
-            const d = await r.json();
-            showStatus(d.msg || (d.result === "success" ? "✅ Geslaagd!" : "❌ Mislukt: " + d.msg)); // VERVANGEN: alert -> showStatus
-            localStorage.removeItem('activeInteract');
-            isInteracting = false;
-            updateGame();
         }
 
         async function updateGame() {
@@ -270,102 +381,103 @@ async function fetchStartTime() {
                             else { btnTxt = "MAX"; act = ""; }
                             time = 30;
                         } else {
-                            act = "attack"; btnTxt = "Basis Aanvallen"; cost = "150💰";
+                            act = "attack"; btnTxt = "Aanvallen"; cost = "150💰";
                             time = loc.attackDuration;
-                            if (!loc.canAttackBasis) { btnTxt = "Sloop eerst de mijnen"; disabled = true; }
+                            if (!loc.canAttackBasis) { btnTxt = "Mijnen eerst"; disabled = true; }
                         }
                     } else {
-                        if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Mijn Bouwen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
+                        if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; time = 30; }
                         else if (isOwner) {
                             act = "upgrade";
-                            if (loc.upgrade === "standaard") { btnTxt = "Gewapende Arbeiders"; cost = "50🌾, 50💰"; }
+                            if (loc.upgrade === "standaard") { btnTxt = "Arbeiders"; cost = "50🌾, 50💰"; }
                             else if (loc.upgrade === "Gewapende Arbeiders") { btnTxt = "Buitenpost"; cost = "75🪵, 75🪨"; }
                             else { btnTxt = "MAX"; act = ""; }
                             time = 30;
                         } else {
-                            act = "attack"; btnTxt = "Mijn Aanvallen"; cost = "75💰";
-                            time = loc.attackDuration;
+                            act = "attack"; btnTxt = "Aanvallen"; cost = "75💰"; time = loc.attackDuration;
                         }
                     }
 
-                    // STATUS UITROEPTEKEN LOGICA
+                    // UITROEPTEKEN LOGICA
                     let statusIcon = "";
-                    if (loc.status && loc.status !== "ok") {
+                    if (loc.status && loc.status.toLowerCase() !== "ok") {
                         let statusClass = "";
                         const s = loc.status.toLowerCase();
                         if (s.includes("claim")) statusClass = "status-claim";
                         else if (s.includes("aanval") || s.includes("attack")) statusClass = "status-attack";
                         else if (s.includes("upgrad") || s.includes("üpgrad")) statusClass = "status-upgrade";
-                        
                         if (statusClass !== "") statusIcon = `<div class="warning-blink ${statusClass}">!</div>`;
                     }
 
                     const iconHtml = `<div class="custom-icon-container">${statusIcon}<div class="map-emoji">${emoji}</div></div>`;
-                    const popupHTML = `<div class="popup-content"><b>${loc.type}</b><br><small>Level: ${loc.upgrade}</small><br><small>Team: ${loc.eigenaar}</small><hr><span style="font-size:0.75rem;">Kost: ${cost}</span><button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button></div>`;
+                    const popupHTML = `<div style="text-align:center; font-family:'Cinzel',serif;">
+                        <b>${loc.type}</b><br><small>${loc.upgrade}</small><br>
+                        <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+                        <span style="font-size:0.7rem;">Kost: ${cost}</span>
+                        <button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])" ${disabled||act===""?'disabled':''}>${btnTxt}</button>
+                    </div>`;
 
                     L.circle(coords, { radius: 15, color: loc.kleur, fillOpacity: 0.3 }).addTo(locationLayer).bindPopup(popupHTML);
-                    
-                    L.marker(coords, { 
-                        icon: L.divIcon({ 
-                            className:'custom-div-icon', 
-                            html: iconHtml, 
-                            iconSize: [50, 50], 
-                            iconAnchor: [25, 25] 
-                        }), 
-                        interactive: false 
-                    }).addTo(locationLayer);
-
+                    L.marker(coords, { icon: L.divIcon({ className:'custom-div-icon', html: iconHtml, iconSize: [50, 50], iconAnchor: [25, 25] }), interactive: false }).addTo(locationLayer);
                     markersRef[loc.id] = { coords };
                 });
             } catch(e) { console.error(e); }
         }
 
-        function autoOpenInteract() {
-            if (!userMarker) return;
-            for (let id in markersRef) {
-                if (map.distance(userMarker.getLatLng(), markersRef[id].coords) <= 20) {
-                    locationLayer.eachLayer(l => { if(l.getPopup && l.getLatLng().equals(markersRef[id].coords)) l.openPopup(); });
-                    return;
-                }
-            }
+        async function startInteract(id, act, duration, coords) {
+            if (isInteracting) return showStatus("❌ Al bezig!");
+            try {
+                await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`);
+            } catch(e) {}
+            const endTimestamp = Date.now() + (duration * 1000);
+            localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
+            runTimerCycle();
+            updateGame(); 
         }
 
-        function locateUser() { map.locate({setView: true, maxZoom: 18}); }
+        function runTimerCycle() {
+            const data = localStorage.getItem('activeInteract');
+            if (!data) { isInteracting = false; return; }
+            isInteracting = true;
+            const { id, act, endTimestamp, coords } = JSON.parse(data);
+            const over = Math.ceil((endTimestamp - Date.now()) / 1000);
+            if (over <= 0) { finishInteract(id, act); return; }
+            if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
+                localStorage.removeItem('activeInteract'); isInteracting = false;
+                showStatus("⚠️ Buiten bereik!");
+                fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
+                updateGame(); return;
+            }
+            const btn = document.getElementById(`btn-${id}`);
+            if (btn) { btn.disabled = true; btn.innerText = `${over}s`; btn.style.background = "#d97706"; }
+            setTimeout(runTimerCycle, 1000);
+        }
+
+        async function finishInteract(id, act) {
+            const speler = localStorage.getItem("tribe_player");
+            const r = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&team=${encodeURIComponent(userTeam)}&naam=${encodeURIComponent(speler)}`);
+            const d = await r.json();
+            showStatus(d.msg || "✅ Klaar!");
+            localStorage.removeItem('activeInteract'); isInteracting = false;
+            updateGame();
+        }
+
+        function locateUser() { map.locate({setView: true, maxZoom: 17}); }
         map.on('locationfound', e => {
-            if (!userMarker) userMarker = L.marker(e.latlng).addTo(map);
+            if (!userMarker) userMarker = L.circleMarker(e.latlng, {radius: 8, color: '#fff', fillOpacity: 1}).addTo(map);
             else userMarker.setLatLng(e.latlng);
         });
 
         window.onload = () => { 
             fetchStartTime(); 
             updateGame(); 
-            
-            // Ververs de kaart en grondstoffen elke 15 seconden
             setInterval(updateGame, 15000); 
-
-            // CONTROLE OP VASTGELOPEN ACTIES
             const active = localStorage.getItem('activeInteract');
             if (active) {
-                try {
-                    const parsed = JSON.parse(active);
-                    const nu = Date.now();
-                    
-                    // Als de eindtijd van de actie in het verleden ligt, 
-                    // is de actie verlopen of mislukt. We maken de weg vrij.
-                    if (nu > parsed.endTimestamp) {
-                        console.log("Oude interactie opgeruimd.");
-                        localStorage.removeItem('activeInteract');
-                        isInteracting = false;
-                    } else {
-                        // De actie is nog bezig, hervat de visuele timer
-                        runTimerCycle(); 
-                    }
-                } catch (e) {
-                    // Bij een leesfout in het geheugen: voor de zekerheid wissen
-                    localStorage.removeItem('activeInteract');
-                }
+                const parsed = JSON.parse(active);
+                if (Date.now() > parsed.endTimestamp) localStorage.removeItem('activeInteract');
+                else runTimerCycle();
             }
-
             locateUser(); 
         };
     </script>
