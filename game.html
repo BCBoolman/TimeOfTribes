@@ -9,173 +9,75 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        /* =========================================
-           BASIS STYLING
-           ========================================= */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Cinzel', serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cinzel', serif; }
+        body { background: #000; height: 100vh; width: 100vw; color: #d1d1d1; overflow: hidden; position: relative; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
 
-        body {
-            background: #000;
-            height: 100vh;
-            width: 100vw;
-            color: #d1d1d1;
-            overflow: hidden;
-            position: relative;
-        }
-
-        #map {
-            position: absolute;
-            top: 0; bottom: 0; width: 100%;
-            z-index: 1;
-        }
-
-        /* =========================================
-           UI LAYERS (BOVEN & ONDER)
-           ========================================= */
-        .game-ui-top {
-            position: fixed;
-            top: 0; width: 100%;
-            z-index: 1000;
-            pointer-events: none;
-        }
-
+        /* UI LAYERS */
+        .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 1000; pointer-events: none; }
         .timer-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 8, 20, 0.9);
-            backdrop-filter: blur(5px);
-            padding: 15px 20px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            pointer-events: auto;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0, 8, 20, 0.9); backdrop-filter: blur(5px);
+            padding: 15px 20px; border-bottom: 2px solid rgba(255, 255, 255, 0.2); pointer-events: auto;
         }
-
-        #gameClock, #dayTimer {
-            font-size: 1.3rem; 
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .top-logo {
-            height: 55px;
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
-        }
-
+        #gameClock, #dayTimer { font-size: 1.3rem; font-weight: bold; color: #fff; }
+        .top-logo { height: 55px; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4)); }
         .resource-row {
-            display: flex;
-            justify-content: space-around;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 12px 5px;
-            color: #fbbf24;
-            pointer-events: auto;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; justify-content: space-around; background: rgba(0, 0, 0, 0.8);
+            padding: 12px 5px; color: #fbbf24; pointer-events: auto; font-size: 1.1rem;
+            font-weight: bold; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* UNIFORME KNOPPEN */
+        /* KNOPPEN STYLING */
         .game-btn, .btn-interact {
-            background: rgba(0, 8, 20, 0.9);
-            backdrop-filter: blur(5px);
-            color: #fff;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 18px 5px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            text-align: center;
-            display: block;
-            width: 100%;
-            font-family: 'Cinzel', serif;
+            background: rgba(0, 8, 20, 0.9); backdrop-filter: blur(5px);
+            color: #fff; border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 18px 5px; border-radius: 4px; font-weight: bold;
+            font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: center; display: block; width: 100%; font-family: 'Cinzel', serif;
         }
-
-        .game-btn:active, .btn-interact:active {
-            background: #fff;
-            color: #000;
-        }
-
-        /* Visueel "disabled" maar nog wel klikbaar voor de melding */
-        .btn-locked {
-            opacity: 0.5;
-            filter: grayscale(1);
-        }
+        .game-btn:active, .btn-interact:active { background: #fff; color: #000; }
+        .btn-locked { opacity: 0.5; filter: grayscale(1); }
 
         .game-ui-bottom {
-            position: fixed;
-            bottom: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            z-index: 1000;
-            padding: 0 15px;
-            pointer-events: none;
+            position: fixed; bottom: 30px; width: 100%; display: flex;
+            justify-content: center; gap: 12px; z-index: 1000; padding: 0 15px; pointer-events: none;
         }
+        .game-ui-bottom .game-btn { flex: 1; pointer-events: auto; }
 
-        .game-ui-bottom .game-btn {
-            flex: 1;
-            pointer-events: auto;
-        }
-
-        /* =========================================
-           POPUP STYLING
-           ========================================= */
+        /* POPUP STYLING */
         .leaflet-popup-content-wrapper {
-            background: rgba(0, 8, 20, 0.95);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0;
-            padding: 5px;
+            background: rgba(0, 8, 20, 0.95); color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0; padding: 5px;
         }
         .leaflet-popup-tip { background: rgba(0, 8, 20, 0.95); }
 
-        /* =========================================
-           STATUS & MARKERS
-           ========================================= */
+        /* MARKERS & STATUS */
         .custom-icon-container {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 60px !important; height: 60px !important; position: relative;
-            z-index: 500 !important;
+            width: 60px !important; height: 60px !important; position: relative; z-index: 500 !important;
         }
-
         .warning-blink {
             position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
-            animation: blinker 0.8s linear infinite;
-            font-weight: 900; font-size: 48px; z-index: 9999 !important;
+            animation: blinker 0.8s linear infinite; font-weight: 900; font-size: 48px; z-index: 9999 !important;
             text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0px 0px 10px rgba(0,0,0,1);
         }
         @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-
-        .status-attack { color: #ff0000; }
-        .status-claim { color: #000; }
-        .status-upgrade { color: #00ff00; }
+        .status-attack { color: #ff0000; } .status-claim { color: #000; } .status-upgrade { color: #00ff00; }
 
         #status-bar {
-            position: fixed; top: 145px; left: 50%;
-            transform: translateX(-50%);
-            background: rgba(220, 38, 38, 0.95);
-            color: white; padding: 12px 25px;
-            font-size: 1rem; font-weight: bold;
-            z-index: 2000; display: none;
-            border: 2px solid white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            text-align: center; width: 80%;
+            position: fixed; top: 145px; left: 50%; transform: translateX(-50%);
+            background: rgba(220, 38, 38, 0.95); color: white; padding: 12px 25px;
+            font-size: 1rem; font-weight: bold; z-index: 2000; display: none;
+            border: 2px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            text-align: center; width: 85%;
         }
 
         #game-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 5, 15, 0.98); z-index: 9999;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            text-align: center;
+            display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center;
         }
     </style>
 </head>
@@ -183,7 +85,7 @@
 
     <div id="game-overlay">
         <h1 style="font-size: 2rem; letter-spacing: 5px;">Time of Tribes</h1>
-        <p id="overlay-msg" style="font-size: 1.2rem; margin-top: 20px;">Verbinding maken...</p>
+        <p id="overlay-msg" style="font-size: 1.2rem; margin-top: 20px;">Laden...</p>
     </div>
 
     <div id="status-bar">Melding...</div>
@@ -214,7 +116,6 @@
     <script>
         const scriptURL = "https://script.google.com/macros/s/AKfycbxPFzpgc05W4SXZtD5T3cxXZoBzMIxUFI316UWfibVdtp5NencKdi0fPPYyPcYV47JWLQ/exec"; 
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
-        
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
         
         const locationLayer = L.layerGroup().addTo(map);
@@ -257,7 +158,6 @@
             const dm = Math.floor((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) / 60000).toString().padStart(2, '0');
             const ds = Math.floor(((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
-            if (dm === "00" && ds === "00") setTimeout(updateGame, 1500);
         }
 
         async function updateGame() {
@@ -282,51 +182,52 @@
                 lData.data.forEach(loc => {
                     const coords = loc.coords.split(',').map(Number);
                     const dist = userMarker ? map.distance(userMarker.getLatLng(), coords) : 999;
-                    const isOwner = loc.eigenaar.toLowerCase() === userTeam.toLowerCase();
-                    const isLocked = dist > 25; // Check voor de melding
+                    const rawOwner = loc.eigenaar || "geen";
+                    const isOwner = rawOwner.toLowerCase() === userTeam.toLowerCase();
+                    const currentStatus = loc.status || "ok";
+                    const isLocked = dist > 25;
                     
                     let emoji = "🏰", btnTxt = "N/A", act = "", time = 30, cost = "";
                     if (loc.type.toLowerCase().includes("voedsel")) emoji = "🌾";
                     if (loc.type.toLowerCase().includes("hout")) emoji = "🪵";
                     if (loc.type.toLowerCase().includes("steen")) emoji = "🪨";
 
-                    if (loc.eigenaar === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; }
+                    if (rawOwner === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; }
                     else if (isOwner) { act = "upgrade"; btnTxt = "Upgraden"; cost = "Varieert"; }
                     else { act = "attack"; btnTxt = "Aanvallen"; cost = "150💰"; time = loc.attackDuration; }
 
                     let blinkIcon = "";
-                    if (loc.status !== "ok") {
-                        let bC = loc.status.includes("aanval") ? "status-attack" : (loc.status.includes("claim") ? "status-claim" : "status-upgrade");
+                    if (currentStatus !== "ok") {
+                        let bC = currentStatus.includes("aanval") ? "status-attack" : (currentStatus.includes("claim") ? "status-claim" : "status-upgrade");
                         blinkIcon = `<div class="warning-blink ${bC}">!</div>`;
                     }
 
-                    const popupHTML = `<div style="text-align:center; min-width:180px; color:#fff;">
+                    const popupHTML = `<div style="text-align:center; min-width:180px; color:#fff; font-family:'Cinzel',serif;">
                         <b style="font-size:1.1rem; color:#fbbf24;">${loc.type}</b><br>
-                        <span style="font-size:0.8rem; opacity:0.8;">Eigenaar: ${loc.eigenaar}</span>
+                        <span style="font-size:0.8rem; opacity:0.8;">${loc.upgrade || 'Standaard'}</span>
                         <hr style="margin:8px 0; opacity:0.2;">
-                        <div style="font-size:0.85rem; margin-bottom:10px;">Status: ${loc.status}</div>
-                        <button class="btn-interact ${isLocked ? 'btn-locked' : ''}" 
+                        <div style="text-align:left; font-size:0.85rem; margin-bottom:10px; line-height:1.4;">
+                            Eigenaar: <span style="color:${loc.kleur || '#fff'}; font-weight:bold;">${rawOwner === "geen" ? "Niemand" : rawOwner}</span><br>
+                            Status: <span style="font-weight:bold; color:${currentStatus.toLowerCase() === 'ok' ? '#22c55e' : '#fbbf24'}">${currentStatus}</span>
+                        </div>
+                        <span style="font-size:0.8rem; display:block; margin-bottom:8px; opacity:0.7;">Kost: ${cost}</span>
+                        <button class="btn-interact ${isLocked ? 'btn-locked' : ''}" id="btn-${loc.id}" 
                                 onclick="startInteract(${loc.id},'${act}',${time},[${coords}],${isLocked})">
                                 ${btnTxt}
                         </button>
                     </div>`;
 
-                    L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4 }).addTo(locationLayer).bindPopup(popupHTML);
-                    L.marker(coords, { icon: L.divIcon({ className:'', html: `<div class="custom-icon-container">${blinkIcon}<div style="font-size:32px;">${emoji}</div></div>`, iconSize: [60,60], iconAnchor: [30,30] }), interactive: false }).addTo(locationLayer);
+                    L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
+                    L.marker(coords, { icon: L.divIcon({ className:'', html: `<div class="custom-icon-container">${blinkIcon}<div style="font-size:32px;">${emoji}</div></div>`, iconSize:[60,60], iconAnchor:[30,30] }), interactive: false }).addTo(locationLayer);
                 });
             } catch(e) {}
         }
 
         async function startInteract(id, act, duration, coords, isLocked) {
-            // DE BELANGRIJKE MELDING HIER:
-            if (isLocked) {
-                showStatus("⚠️ Je bent te ver weg! (Blijf binnen 25m)");
-                return;
-            }
+            if (isLocked) { showStatus("⚠️ Je bent te ver weg! (Blijf binnen 25m)"); return; }
             if (isInteracting) return showStatus("❌ Je bent al bezig!");
 
             try { await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`); } catch(e) {}
-            
             const endTimestamp = Date.now() + (duration * 1000);
             localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
             runTimerCycle();
@@ -339,18 +240,14 @@
             isInteracting = true;
             const { id, act, endTimestamp, coords } = JSON.parse(data);
             const over = Math.ceil((endTimestamp - Date.now()) / 1000);
-
             if (over <= 0) { finishInteract(id, act); return; }
 
-            // Check tijdens het lopen
             if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
-                localStorage.removeItem('activeInteract'); 
-                isInteracting = false;
+                localStorage.removeItem('activeInteract'); isInteracting = false;
                 showStatus("⚠️ Interactie afgebroken: Je liep te ver weg!");
                 fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`);
                 updateGame(); return;
             }
-
             const btn = document.getElementById(`btn-${id}`);
             if (btn) { btn.innerText = `${over}s`; btn.style.background = "#d97706"; }
             setTimeout(runTimerCycle, 1000);
