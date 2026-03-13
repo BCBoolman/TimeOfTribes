@@ -323,7 +323,7 @@
                     </div>`;
 
                     L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
-                    L.marker(coords, { icon: L.divIcon({ className:'', html: `<div class="custom-icon-container">${blinkIcon}<div style="font-size:32px;">${emoji}</div></div>`, iconSize:[60,60], iconAnchor:[30,30] }), interactive: false }).addTo(locationLayer);
+                    L.marker(coords, { icon: L.divIcon({ className:'', html: `<div class="custom-icon-container">${blinkIcon}<div style="font-size:32px; filter: drop-shadow(0px 0px 8px rgba(0,0,0,1)) drop-shadow(0px 0px 4px rgba(0,0,0,0.8));">${emoji}</div></div>`, iconSize:[60,60], iconAnchor:[30,30] }), interactive: false }).addTo(locationLayer);
                 });
             } catch(e) {}
         }
