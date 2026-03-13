@@ -122,7 +122,7 @@
     <div class="game-ui-top">
         <div class="timer-row">
             <div>⏱️ <span id="gameClock">02:00:00</span></div>
-            <img src="https://raw.githubusercontent.com/username/repo/main/images/logo.svg" class="top-logo" alt="Logo">
+            <img src="https://raw.githubusercontent.com/username/repo/main/images/Time of Tribes - logo.svg" class="top-logo" alt="Logo">
             <div>☀️ <span id="dayTimer" style="color:#facc15">15:00</span></div>
         </div>
         <div class="resource-row">
@@ -298,16 +298,16 @@
 
                     const popupHTML = `<div style="text-align:center; min-width:190px; color:#fff; font-family:'Cinzel',serif;">
                         <b style="font-size:1.1rem; color:#fbbf24;">${loc.type}</b><br>
-                        <span style="font-size:0.8rem; opacity:0.8;">Huidig: ${loc.upgrade || 'Standaard'}</span>
+                        <span style="font-size:0.8rem; opacity:0.8;">Huidig niveau: ${loc.upgrade || 'Standaard'}</span>
                         <hr style="margin:8px 0; opacity:0.2;">
                         <div style="text-align:left; font-size:0.85rem; margin-bottom:10px; line-height:1.4;">
                             Eigenaar: <span style="color:${loc.kleur || '#fff'}; font-weight:bold;">${rawOwner === "geen" ? "Niemand" : rawOwner}</span><br>
                             Status: <span style="font-weight:bold; color:${currentStatus.toLowerCase() === 'ok' ? '#22c55e' : '#fbbf24'}">${currentStatus}</span>
                         </div>
                         <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:4px; margin-bottom:10px; text-align:left;">
-                            ${nextUpgrade ? `<span style="font-size:0.8rem; display:block; color:#fbbf24;">▶ Volgende: <b>${nextUpgrade}</b></span>` : ''}
-                            <span style="font-size:0.8rem; display:block; opacity:0.9;">⏳ Tijd: ${displayTime}</span>
-                            <span style="font-size:0.8rem; display:block; opacity:0.9;">🪙 Kost: ${cost}</span>
+                            ${nextUpgrade ? `<span style="font-size:0.8rem; display:block; color:#fbbf24;">▶ Volgende upgrade: <b>${nextUpgrade}</b></span>` : ''}
+                            <span style="font-size:0.8rem; display:block; opacity:0.9;">⏳ Interactie Tijd: ${displayTime}</span>
+                            <span style="font-size:0.8rem; display:block; opacity:0.9;">🪙 Interatie Kosten: ${cost}</span>
                         </div>
                         ${actionBtnHTML}
                         ${cancelBtnHTML}
