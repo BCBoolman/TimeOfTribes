@@ -216,7 +216,7 @@
             if (!gameStartTime) return;
             const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
             
-            if (resterend <= 0) return showOverlay("Einde", "De tijd is om!");
+            if (resterend <= 0) return showOverlay("Einde", "De tijd is om! Loop terug naar de Centrale Post.");
 
             const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
             const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
