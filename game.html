@@ -57,14 +57,19 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 60px !important; height: 60px !important; position: relative; z-index: 500 !important;
         }
+
+        /* UITROEPTEKEN BASIS */
         .warning-blink {
             position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
             animation: blinker 0.8s linear infinite; font-weight: 900; font-size: 48px; z-index: 9999 !important;
             text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0px 0px 10px rgba(0,0,0,1);
-            .status-claim { color: #000 !important; }   /* Zwart voor claimen */
-            .status-upgrade { color: #22c55e !important; } /* Groen voor upgraden */
-            .status-attack { color: #ff0000 !important; }  /* Rood voor aanvallen */
         }
+
+        /* UITROEPTEKEN KLEUREN (Nu correct buiten de blinker klasse) */
+        .status-claim { color: #000 !important; }   /* Zwart voor claimen */
+        .status-upgrade { color: #22c55e !important; } /* Groen voor upgraden */
+        .status-attack { color: #ff0000 !important; }  /* Rood voor aanvallen */
+
         @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
 
         /* --- MELDINGEN --- */
@@ -175,7 +180,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // VERVANG DEZE LINK!
         const scriptURL = "https://script.google.com/macros/s/AKfycbwbDfRGH3V0zP7Ml25ewakjeiFILV7AL-50Y-YCPiYw6UzEuTNeeIppaYdMtwsJ9mbuuA/exec"; 
         
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
@@ -208,30 +212,27 @@
 
         function heartbeat() { updateClocks(); setTimeout(heartbeat, 1000); }
 
-function updateClocks() {
-    if (!gameStartTime) return;
-    const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
-    
-    if (resterend <= 0) return showOverlay("Einde", "De tijd is om!");
+        function updateClocks() {
+            if (!gameStartTime) return;
+            const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
+            
+            if (resterend <= 0) return showOverlay("Einde", "De tijd is om!");
 
-    // Algemene klok (uren:minuten:seconden)
-    const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
-    const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
-    const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
-    document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
+            const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
 
-    // --- Nieuw: Berekening voor de 15-minuten cyclus ---
-    const msTotVolgendeCyclus = 15 * 60 * 1000 - (diff % (15 * 60 * 1000));
-    
-    const dm = Math.floor(msTotVolgendeCyclus / 60000).toString().padStart(2, '0');
-    const ds = Math.floor((msTotVolgendeCyclus % 60000) / 1000).toString().padStart(2, '0');
-    document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
+            const msTotVolgendeCyclus = 15 * 60 * 1000 - (diff % (15 * 60 * 1000));
+            
+            const dm = Math.floor(msTotVolgendeCyclus / 60000).toString().padStart(2, '0');
+            const ds = Math.floor((msTotVolgendeCyclus % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
 
-    // Waarschuwing dagconsumptie (tussen 60 en 58 seconden voor de deadline)
-    if (msTotVolgendeCyclus < 60000 && msTotVolgendeCyclus > 58000) {
-        showStatus("⚠️ Let op: Dagconsumptie over 1 minuut!", 5000);
-    }
-} // <--- Deze accolade sloot de functie voorheen niet af!
+            if (msTotVolgendeCyclus <= 60000 && msTotVolgendeCyclus > 59000) {
+                showStatus("⚠️ Let op: Dagconsumptie over 1 minuut!", 5000);
+            }
+        }
 
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
@@ -266,7 +267,6 @@ function updateClocks() {
                     if (lType.includes("hout")) emoji = "🪵";
                     if (lType.includes("steen")) emoji = "🪨";
 
-                    // LOGICA VOOR INTERACTIE & UPGRADES
                     if (rawOwner === "geen") { 
                         act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; 
                         time = loc.claimDuration; displayTime = time + "s";
@@ -291,22 +291,17 @@ function updateClocks() {
                         displayTime = m > 0 ? `${m}m ${s > 0 ? s + 's' : ''}` : `${s}s`;
                     }
 
+                    // --- UITROEPTEKEN LOGICA ---
                     let blinkIcon = "";
-        if (currentStatus !== "ok") {
-    let bClass = "";
-    const s = currentStatus.toLowerCase();
-    
-    // Bepaal de kleurklasse op basis van de tekst in de status
-    if (s.includes("geclaimd")) bClass = "status-claim";
-    else if (s.includes("aangevallen") || s.includes("attack")) bClass = "status-attack";
-    else if (s.includes("geüpgraded") || s.includes("üpgrad")) bClass = "status-upgrade";
-    
-    if (bClass !== "") {
-        blinkIcon = `<div class="warning-blink ${bClass}">!</div>`;
-    } else {
-        blinkIcon = `<div class="warning-blink">!</div>`; // Fallback (wit)
-    }
-}
+                    if (currentStatus !== "ok") {
+                        let bClass = "";
+                        const s = currentStatus.toLowerCase();
+                        if (s.includes("claim")) bClass = "status-claim";
+                        else if (s.includes("aanval") || s.includes("attack")) bClass = "status-attack";
+                        else if (s.includes("upgrad") || s.includes("üpgrad")) bClass = "status-upgrade";
+                        
+                        blinkIcon = `<div class="warning-blink ${bClass}">!</div>`;
+                    }
 
                     let activeData = JSON.parse(localStorage.getItem('activeInteract'));
                     let actionBtnHTML = "";
@@ -333,7 +328,7 @@ function updateClocks() {
                         <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:4px; margin-bottom:10px; text-align:left;">
                             ${nextUpgrade ? `<span style="font-size:0.8rem; display:block; color:#fbbf24;">▶ Volgende upgrade: <b>${nextUpgrade}</b></span>` : ''}
                             <span style="font-size:0.8rem; display:block; opacity:0.9;">⏳ Interactie Tijd: ${displayTime}</span>
-                            <span style="font-size:0.8rem; display:block; opacity:0.9;">🪙 Interatie Kosten: ${cost}</span>
+                            <span style="font-size:0.8rem; display:block; opacity:0.9;">🪙 Interactie Kosten: ${cost}</span>
                         </div>
                         ${actionBtnHTML}
                         ${cancelBtnHTML}
