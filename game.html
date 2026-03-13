@@ -14,7 +14,7 @@
         body { background: #000; height: 100vh; width: 100vw; color: #d1d1d1; overflow: hidden; position: relative; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
 
-        /* --- TOP UI (Tijd en Grondstoffen) --- */
+        /* --- TOP UI --- */
         .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 1000; pointer-events: none; }
         .timer-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -63,9 +63,8 @@
             text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0px 0px 10px rgba(0,0,0,1);
         }
         @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-        .status-attack { color: #ff0000; } .status-claim { color: #000; } .status-upgrade { color: #00ff00; }
 
-        /* --- ALGEMENE MELDINGEN --- */
+        /* --- MELDINGEN --- */
         #status-bar {
             position: fixed; top: 145px; left: 50%; transform: translateX(-50%);
             background: rgba(220, 38, 38, 0.95); color: white; padding: 12px 25px;
@@ -123,8 +122,8 @@
     <div class="game-ui-top">
         <div class="timer-row">
             <div>⏱️ <span id="gameClock">02:00:00</span></div>
-            <img src="images/Time of Tribes - logo.svg" class="top-logo" alt="Logo">
-            <div>☀️ <span id="dayTimer">15:00</span></div>
+            <img src="https://raw.githubusercontent.com/username/repo/main/images/logo.svg" class="top-logo" alt="Logo">
+            <div>☀️ <span id="dayTimer" style="color:#facc15">15:00</span></div>
         </div>
         <div class="resource-row">
             <div>🌾 <span id="food">0</span></div> 
@@ -145,71 +144,43 @@
     <div id="trade-modal">
         <div class="trade-container">
             <h2 class="trade-title">🤝 Handelspost</h2>
-            
-            <select id="trade-team-select" class="trade-select" onchange="updatePlayerDropdown()">
-                <option value="">Laden...</option>
-            </select>
-            
-            <select id="trade-player-select" class="trade-select">
-                <option value="">Kies eerst een team</option>
-            </select>
-
+            <select id="trade-team-select" class="trade-select" onchange="updatePlayerDropdown()"><option value="">Laden...</option></select>
+            <select id="trade-player-select" class="trade-select"><option value="">Kies eerst een team</option></select>
             <div class="trade-section">
-                <h3>Jouw Bod (Wat jij geeft)</h3>
+                <h3>Jouw Bod</h3>
                 <div class="trade-grid">
-                    <div class="trade-col">
-                        <span>🌾</span><button class="trade-btn-small" onclick="adjRes('of_f', 5)">+</button><input type="text" id="of_f" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_f', -5)">-</button>
-                    </div>
-                    <div class="trade-col">
-                        <span>🪵</span><button class="trade-btn-small" onclick="adjRes('of_w', 5)">+</button><input type="text" id="of_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_w', -5)">-</button>
-                    </div>
-                    <div class="trade-col">
-                        <span>🪨</span><button class="trade-btn-small" onclick="adjRes('of_s', 5)">+</button><input type="text" id="of_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_s', -5)">-</button>
-                    </div>
-                    <div class="trade-col">
-                        <span>💰</span><button class="trade-btn-small" onclick="adjRes('of_c', 5)">+</button><input type="text" id="of_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_c', -5)">-</button>
-                    </div>
+                    <div class="trade-col"><span>🌾</span><button class="trade-btn-small" onclick="adjRes('of_f', 5)">+</button><input type="text" id="of_f" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_f', -5)">-</button></div>
+                    <div class="trade-col"><span>🪵</span><button class="trade-btn-small" onclick="adjRes('of_w', 5)">+</button><input type="text" id="of_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_w', -5)">-</button></div>
+                    <div class="trade-col"><span>🪨</span><button class="trade-btn-small" onclick="adjRes('of_s', 5)">+</button><input type="text" id="of_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_s', -5)">-</button></div>
+                    <div class="trade-col"><span>💰</span><button class="trade-btn-small" onclick="adjRes('of_c', 5)">+</button><input type="text" id="of_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_c', -5)">-</button></div>
                 </div>
             </div>
-
             <div class="trade-section">
-                <h3>Tegenbod (Wat zij geven)</h3>
+                <h3>Tegenbod</h3>
                 <div class="trade-grid">
-                    <div class="trade-col">
-                        <span>🌾</span><button class="trade-btn-small" onclick="adjRes('req_f', 5)">+</button><input type="text" id="req_f" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_f', -5)">-</button>
-                    </div>
-                    <div class="trade-col">
-                        <span>🪵</span><button class="trade-btn-small" onclick="adjRes('req_w', 5)">+</button><input type="text" id="req_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_w', -5)">-</button>
-                    </div>
-                    <div class="trade-col">
-                        <span>🪨</span><button class="trade-btn-small" onclick="adjRes('req_s', 5)">+</button><input type="text" id="req_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_s', -5)">-</button>
-                    </div>
-                    <div class="trade-col">
-                        <span>💰</span><button class="trade-btn-small" onclick="adjRes('req_c', 5)">+</button><input type="text" id="req_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_c', -5)">-</button>
-                    </div>
+                    <div class="trade-col"><span>🌾</span><button class="trade-btn-small" onclick="adjRes('req_f', 5)">+</button><input type="text" id="req_f" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_f', -5)">-</button></div>
+                    <div class="trade-col"><span>🪵</span><button class="trade-btn-small" onclick="adjRes('req_w', 5)">+</button><input type="text" id="req_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_w', -5)">-</button></div>
+                    <div class="trade-col"><span>🪨</span><button class="trade-btn-small" onclick="adjRes('req_s', 5)">+</button><input type="text" id="req_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_s', -5)">-</button></div>
+                    <div class="trade-col"><span>💰</span><button class="trade-btn-small" onclick="adjRes('req_c', 5)">+</button><input type="text" id="req_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_c', -5)">-</button></div>
                 </div>
             </div>
-
-            <input type="password" id="trade-pin" class="trade-input-pin" placeholder="Pincode van partner...">
-            <button class="game-btn" style="background: #166534; border-color: #22c55e;" onclick="submitTrade()">Voer Handel Uit</button>
+            <input type="password" id="trade-pin" class="trade-input-pin" placeholder="Pincode partner...">
+            <button class="game-btn" style="background:#166534; border-color:#22c55e;" onclick="submitTrade()">Voer Handel Uit</button>
             <button class="game-btn btn-cancel" onclick="closeTradeMenu()">Sluiten</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // VERVANG DEZE LINK MET NIEUWE WEB APP URL
+        // VERVANG DEZE LINK!
         const scriptURL = "https://script.google.com/macros/s/AKfycbwbDfRGH3V0zP7Ml25ewakjeiFILV7AL-50Y-YCPiYw6UzEuTNeeIppaYdMtwsJ9mbuuA/exec"; 
         
-        // --- MAP SETUP ---
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
         
         const locationLayer = L.layerGroup().addTo(map);
-        let userMarker, userTeam = "", isInteracting = false, gameStartTime = null;
-        let globalTradeData = {};
+        let userMarker, userTeam = "", isInteracting = false, gameStartTime = null, globalTradeData = {};
 
-        // --- HULP FUNCTIES ---
         function showStatus(msg, duration = 4000) {
             const bar = document.getElementById('status-bar');
             bar.innerText = msg; bar.style.display = "block";
@@ -221,7 +192,6 @@
             document.getElementById('overlay-msg').innerText = msg;
         }
 
-        // --- TIJD & CLOCK ---
         async function fetchStartTime() {
             try {
                 const r = await fetch(`${scriptURL}?action=getStartTime`);
@@ -239,18 +209,15 @@
             if (!gameStartTime) return;
             const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
             if (resterend <= 0) return showOverlay("Einde", "De tijd is om!");
-
             const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
             const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
             const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
-
             const dm = Math.floor((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) / 60000).toString().padStart(2, '0');
             const ds = Math.floor(((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) % 60000) / 1000).toString().padStart(2, '0');
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
         }
 
-        // --- MAP UPDATE (Locaties en resources ophalen) ---
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
@@ -277,58 +244,88 @@
                     const isOwner = rawOwner.toLowerCase() === userTeam.toLowerCase();
                     const currentStatus = loc.status || "ok";
                     const isWithinRange = dist <= 25;
-                    
-                    let emoji = "🏰", btnTxt = "N/A", act = "", time = 30, cost = "";
-                    if (loc.type.toLowerCase().includes("voedsel")) emoji = "🌾";
-                    if (loc.type.toLowerCase().includes("hout")) emoji = "🪵";
-                    if (loc.type.toLowerCase().includes("steen")) emoji = "🪨";
+                    const lType = loc.type.toLowerCase();
 
-                    if (rawOwner === "geen") { act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; }
-                    else if (isOwner) { act = "upgrade"; btnTxt = "Upgraden"; cost = "Varieert"; }
-                    else { act = "attack"; btnTxt = "Aanvallen"; cost = "150💰"; time = loc.attackDuration; }
+                    let emoji = "🏰", btnTxt = "N/A", act = "", time = 30, cost = "", nextUpgrade = "", displayTime = "";
+                    if (lType.includes("voedsel")) emoji = "🌾";
+                    if (lType.includes("hout")) emoji = "🪵";
+                    if (lType.includes("steen")) emoji = "🪨";
+
+                    // LOGICA VOOR INTERACTIE & UPGRADES
+                    if (rawOwner === "geen") { 
+                        act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; 
+                        time = loc.claimDuration; displayTime = time + "s";
+                    } else if (isOwner) { 
+                        act = "upgrade"; btnTxt = "Upgraden"; time = 30;
+                        displayTime = "30s";
+                        let upgL = (loc.upgrade || "standaard").toLowerCase();
+                        if (lType.includes("basis")) {
+                            if (upgL === "standaard") { nextUpgrade = "Wachtposten"; cost = "100🪵, 50🪨"; }
+                            else if (upgL === "wachtposten") { nextUpgrade = "Palissademuur"; cost = "150🪵, 150🪨"; }
+                            else if (upgL === "palissademuur") { nextUpgrade = "Fortificaties"; cost = "200🪵, 200🪨, 100💰"; }
+                            else { act = ""; nextUpgrade = "Max Niveau"; cost = "-"; displayTime = "-"; }
+                        } else {
+                            if (upgL === "standaard") { nextUpgrade = "Gewapende Arbeiders"; cost = "50🌾, 50💰"; }
+                            else if (upgL === "gewapende arbeiders") { nextUpgrade = "Buitenpost"; cost = "75🪵, 75🪨"; }
+                            else { act = ""; nextUpgrade = "Max Niveau"; cost = "-"; displayTime = "-"; }
+                        }
+                    } else { 
+                        act = "attack"; btnTxt = "Aanvallen"; cost = lType.includes("basis") ? "150💰" : "75💰"; 
+                        time = loc.attackDuration; 
+                        let m = Math.floor(time / 60), s = time % 60;
+                        displayTime = m > 0 ? `${m}m ${s > 0 ? s + 's' : ''}` : `${s}s`;
+                    }
 
                     let blinkIcon = "";
                     if (currentStatus !== "ok") {
-                        let bC = currentStatus.includes("aanval") ? "status-attack" : (currentStatus.includes("claim") ? "status-claim" : "status-upgrade");
-                        blinkIcon = `<div class="warning-blink ${bC}">!</div>`;
+                        let bC = currentStatus.includes("aanval") ? "status-attack" : "status-claim";
+                        blinkIcon = `<div class="warning-blink">!</div>`;
                     }
 
-                    let cancelBtnHTML = "";
-                    const activeData = JSON.parse(localStorage.getItem('activeInteract'));
-                    if (activeData && activeData.id === loc.id) {
-                        cancelBtnHTML = `<button class="btn-interact btn-cancel" onclick="cancelActiveAction(${loc.id})">✖ Annuleren</button>`;
-                    }
-
+                    let activeData = JSON.parse(localStorage.getItem('activeInteract'));
                     let actionBtnHTML = "";
-                    if (isWithinRange || (activeData && activeData.id === loc.id)) {
-                        actionBtnHTML = `<button class="btn-interact" id="btn-${loc.id}" 
-                                onclick="startInteract(${loc.id},'${act}',${time},[${coords}])">
-                                ${btnTxt}
-                        </button>`;
+                    if (act !== "") {
+                        if (isWithinRange || (activeData && activeData.id === loc.id)) {
+                            actionBtnHTML = `<button class="btn-interact" id="btn-${loc.id}" onclick="startInteract(${loc.id},'${act}',${time},[${coords}])">${btnTxt}</button>`;
+                        } else {
+                            actionBtnHTML = `<p style="font-size:0.8rem; opacity:0.6; font-style:italic;">Loop dichterbij om te interacteren</p>`;
+                        }
                     } else {
-                        actionBtnHTML = `<p style="font-size:0.8rem; opacity:0.6; font-style:italic;">Loop dichterbij om te interacteren</p>`;
+                        actionBtnHTML = `<p style="font-size:0.85rem; color:#22c55e; font-weight:bold; padding-top:10px;">Max. upgrade bereikt!</p>`;
                     }
 
-                    const popupHTML = `<div style="text-align:center; min-width:180px; color:#fff; font-family:'Cinzel',serif;">
+                    let cancelBtnHTML = (activeData && activeData.id === loc.id) ? `<button class="btn-interact btn-cancel" onclick="cancelActiveAction(${loc.id})">✖ Annuleren</button>` : "";
+
+                    const popupHTML = `<div style="text-align:center; min-width:190px; color:#fff; font-family:'Cinzel',serif;">
                         <b style="font-size:1.1rem; color:#fbbf24;">${loc.type}</b><br>
-                        <span style="font-size:0.8rem; opacity:0.8;">${loc.upgrade || 'Standaard'}</span>
+                        <span style="font-size:0.8rem; opacity:0.8;">Huidig: ${loc.upgrade || 'Standaard'}</span>
                         <hr style="margin:8px 0; opacity:0.2;">
                         <div style="text-align:left; font-size:0.85rem; margin-bottom:10px; line-height:1.4;">
                             Eigenaar: <span style="color:${loc.kleur || '#fff'}; font-weight:bold;">${rawOwner === "geen" ? "Niemand" : rawOwner}</span><br>
                             Status: <span style="font-weight:bold; color:${currentStatus.toLowerCase() === 'ok' ? '#22c55e' : '#fbbf24'}">${currentStatus}</span>
                         </div>
-                        <span style="font-size:0.8rem; display:block; margin-bottom:8px; opacity:0.7;">Kost: ${cost}</span>
+                        <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:4px; margin-bottom:10px; text-align:left;">
+                            ${nextUpgrade ? `<span style="font-size:0.8rem; display:block; color:#fbbf24;">▶ Volgende: <b>${nextUpgrade}</b></span>` : ''}
+                            <span style="font-size:0.8rem; display:block; opacity:0.9;">⏳ Tijd: ${displayTime}</span>
+                            <span style="font-size:0.8rem; display:block; opacity:0.9;">🪙 Kost: ${cost}</span>
+                        </div>
                         ${actionBtnHTML}
                         ${cancelBtnHTML}
                     </div>`;
 
                     L.circle(coords, { radius: 15, color: loc.kleur || '#fff', fillOpacity: 0.4, weight: 2 }).addTo(locationLayer).bindPopup(popupHTML);
-                    L.marker(coords, { icon: L.divIcon({ className:'', html: `<div class="custom-icon-container">${blinkIcon}<div style="font-size:32px; filter: drop-shadow(0px 0px 8px rgba(0,0,0,1)) drop-shadow(0px 0px 4px rgba(0,0,0,0.8));">${emoji}</div></div>`, iconSize:[60,60], iconAnchor:[30,30] }), interactive: false }).addTo(locationLayer);
+                    L.marker(coords, { 
+                        icon: L.divIcon({ 
+                            className:'', 
+                            html: `<div class="custom-icon-container">${blinkIcon}<div style="font-size:32px; filter: drop-shadow(0px 0px 8px rgba(0,0,0,1)) drop-shadow(0px 0px 4px rgba(0,0,0,0.8));">${emoji}</div></div>`, 
+                            iconSize:[60,60], iconAnchor:[30,30] 
+                        }), 
+                        interactive: false 
+                    }).addTo(locationLayer);
                 });
             } catch(e) {}
         }
 
-        // --- INTERACTIE LOGICA (Knoppen indrukken en timers) ---
         async function startInteract(id, act, duration, coords) {
             if (isInteracting) return showStatus("❌ Je bent al bezig!");
             try { await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`); } catch(e) {}
@@ -341,7 +338,6 @@
         async function cancelActiveAction(id) {
             localStorage.removeItem('activeInteract');
             isInteracting = false;
-            showStatus("🚫 Interactie geannuleerd.");
             try { await fetch(`${scriptURL}?action=interact&subAction=cancelCapture&id=${id}`); } catch(e) {}
             updateGame();
         }
@@ -350,128 +346,92 @@
             const data = localStorage.getItem('activeInteract');
             if (!data) { isInteracting = false; return; }
             isInteracting = true;
-            const { id, act, endTimestamp, coords } = JSON.parse(data);
+            const { id, endTimestamp, coords } = JSON.parse(data);
             const over = Math.ceil((endTimestamp - Date.now()) / 1000);
-
-            if (over <= 0) { finishInteract(id, act); return; }
-
+            if (over <= 0) { finishInteract(id); return; }
             if (userMarker && map.distance(userMarker.getLatLng(), coords) > 25) {
                 cancelActiveAction(id);
-                showStatus("⚠️ Interactie afgebroken: Je liep te ver weg!");
+                showStatus("⚠️ Te ver weg!");
                 return;
             }
-
             const btn = document.getElementById(`btn-${id}`);
             if (btn) { btn.innerText = `${over}s`; btn.style.background = "#d97706"; }
             setTimeout(runTimerCycle, 1000);
         }
 
-        async function finishInteract(id, act) {
-            const speler = localStorage.getItem("tribe_player");
-            const r = await fetch(`${scriptURL}?action=interact&subAction=${act}&id=${id}&team=${encodeURIComponent(userTeam)}&naam=${encodeURIComponent(speler)}`);
+        async function finishInteract(id) {
+            const data = JSON.parse(localStorage.getItem('activeInteract'));
+            const r = await fetch(`${scriptURL}?action=interact&subAction=${data.act}&id=${id}&team=${encodeURIComponent(userTeam)}&naam=${encodeURIComponent(localStorage.getItem("tribe_player"))}`);
             const d = await r.json();
             showStatus(d.msg || "✅ Voltooid!");
             localStorage.removeItem('activeInteract'); isInteracting = false;
             updateGame();
         }
 
-        // --- GPS LOCATIE ---
         function locateUser() { map.locate({setView: true, maxZoom: 17}); }
         map.on('locationfound', e => {
             if (!userMarker) userMarker = L.circleMarker(e.latlng, {radius: 10, color: '#fff', weight: 3, fillOpacity: 1, fillColor: '#2563eb'}).addTo(map);
             else userMarker.setLatLng(e.latlng);
         });
 
-        // --- HANDELSPOST LOGICA ---
         async function openTradeMenu() {
             document.getElementById('trade-modal').style.display = "flex";
             const teamSelect = document.getElementById('trade-team-select');
             teamSelect.innerHTML = '<option value="">Teams laden...</option>';
-            
             try {
                 const r = await fetch(`${scriptURL}?action=getTradeData`);
                 const d = await r.json();
                 if (d.result === "success") {
                     globalTradeData = d.data;
-                    teamSelect.innerHTML = '<option value="">-- Selecteer een Team --</option>';
+                    teamSelect.innerHTML = '<option value="">-- Selecteer Team --</option>';
                     for (let team in globalTradeData) {
                         if (team.toLowerCase() !== userTeam.toLowerCase()) {
                             let opt = document.createElement('option');
-                            opt.value = team; opt.innerText = team;
-                            teamSelect.appendChild(opt);
+                            opt.value = team; opt.innerText = team; teamSelect.appendChild(opt);
                         }
                     }
                 }
-            } catch(e) { teamSelect.innerHTML = '<option value="">Fout bij laden</option>'; }
+            } catch(e) { teamSelect.innerHTML = '<option value="">Fout!</option>'; }
         }
 
         function updatePlayerDropdown() {
             const team = document.getElementById('trade-team-select').value;
             const playerSelect = document.getElementById('trade-player-select');
-            playerSelect.innerHTML = '<option value="">-- Selecteer een Speler --</option>';
-            
+            playerSelect.innerHTML = '<option value="">-- Selecteer Speler --</option>';
             if (team && globalTradeData[team]) {
                 globalTradeData[team].forEach(speler => {
                     let opt = document.createElement('option');
-                    opt.value = speler; opt.innerText = speler;
-                    playerSelect.appendChild(opt);
+                    opt.value = speler; opt.innerText = speler; playerSelect.appendChild(opt);
                 });
             }
         }
 
         function adjRes(id, amount) {
             const el = document.getElementById(id);
-            let val = parseInt(el.value) || 0; val += amount; if (val < 0) val = 0;
-            el.value = val;
+            let val = parseInt(el.value) || 0; val += amount; if (val < 0) val = 0; el.value = val;
         }
 
         function closeTradeMenu() {
             document.getElementById('trade-modal').style.display = "none";
             ['of_f','of_w','of_s','of_c','req_f','req_w','req_s','req_c'].forEach(id => document.getElementById(id).value = '0');
             document.getElementById('trade-pin').value = '';
-            document.getElementById('trade-team-select').value = '';
-            document.getElementById('trade-player-select').innerHTML = '<option value="">Kies eerst een team</option>';
         }
 
         async function submitTrade() {
-            const p1 = localStorage.getItem("tribe_player");
-            const p2 = document.getElementById('trade-player-select').value;
-            const pin = document.getElementById('trade-pin').value;
-            
-            if (!p2) return showStatus("❌ Selecteer eerst met wie je handelt.");
-            if (!pin) return showStatus("❌ De partner moet zijn/haar pincode invullen.");
-
-            const vals = {
-                oF: document.getElementById('of_f').value, oW: document.getElementById('of_w').value,
-                oS: document.getElementById('of_s').value, oC: document.getElementById('of_c').value,
-                rF: document.getElementById('req_f').value, rW: document.getElementById('req_w').value,
-                rS: document.getElementById('req_s').value, rC: document.getElementById('req_c').value
-            };
-
-            const totalTrade = Object.values(vals).reduce((a, b) => a + parseInt(b), 0);
-            if (totalTrade === 0) return showStatus("❌ Er is geen bod ingevuld.");
-
-            showStatus("⏳ Handel verwerken...");
+            const p1 = localStorage.getItem("tribe_player"), p2 = document.getElementById('trade-player-select').value, pin = document.getElementById('trade-pin').value;
+            if (!p2 || !pin) return showStatus("❌ Selecteer speler en vul pin in.");
+            const vals = { oF: document.getElementById('of_f').value, oW: document.getElementById('of_w').value, oS: document.getElementById('of_s').value, oC: document.getElementById('of_c').value, rF: document.getElementById('req_f').value, rW: document.getElementById('req_w').value, rS: document.getElementById('req_s').value, rC: document.getElementById('req_c').value };
+            showStatus("⏳ Verwerken...");
             closeTradeMenu();
-
             try {
                 const query = `&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&pin=${encodeURIComponent(pin)}&oF=${vals.oF}&oW=${vals.oW}&oS=${vals.oS}&oC=${vals.oC}&rF=${vals.rF}&rW=${vals.rW}&rS=${vals.rS}&rC=${vals.rC}`;
                 const r = await fetch(`${scriptURL}?action=executeTrade${query}`);
                 const d = await r.json();
-                
-                if (d.result === "success") { alert(d.msg); updateGame(); } 
-                else { alert("MISLUKT: " + d.msg); }
-            } catch(e) { showStatus("❌ Verbindingsfout bij handelen."); }
+                alert(d.msg); updateGame();
+            } catch(e) { showStatus("❌ Fout."); }
         }
 
-        // --- START THE GAME ---
-        window.onload = () => { 
-            fetchStartTime(); 
-            updateGame(); 
-            setInterval(updateGame, 15000); 
-            locateUser(); 
-            if(localStorage.getItem('activeInteract')) runTimerCycle();
-        };
+        window.onload = () => { fetchStartTime(); updateGame(); setInterval(updateGame, 15000); locateUser(); if(localStorage.getItem('activeInteract')) runTimerCycle(); };
     </script>
 </body>
 </html>
