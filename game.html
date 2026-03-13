@@ -289,9 +289,9 @@
     const s = currentStatus.toLowerCase();
     
     // Bepaal de kleurklasse op basis van de tekst in de status
-    if (s.includes("claim")) bClass = "status-claim";
-    else if (s.includes("aanval") || s.includes("attack")) bClass = "status-attack";
-    else if (s.includes("upgrad") || s.includes("üpgrad")) bClass = "status-upgrade";
+    if (s.includes("geclaimd")) bClass = "status-claim";
+    else if (s.includes("aangevallen") || s.includes("attack")) bClass = "status-attack";
+    else if (s.includes("geüpgraded") || s.includes("üpgrad")) bClass = "status-upgrade";
     
     if (bClass !== "") {
         blinkIcon = `<div class="warning-blink ${bClass}">!</div>`;
