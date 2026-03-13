@@ -208,22 +208,30 @@
 
         function heartbeat() { updateClocks(); setTimeout(heartbeat, 1000); }
 
-        function updateClocks() {
-            if (!gameStartTime) return;
-            const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
-            if (resterend <= 0) return showOverlay("Einde", "De tijd is om!");
-            const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
-            const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
-            const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
-            document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
-            const dm = Math.floor((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) / 60000).toString().padStart(2, '0');
-            const ds = Math.floor(((15 * 60 * 1000 - (diff % (15 * 60 * 1000))) % 60000) / 1000).toString().padStart(2, '0');
-            document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
-            // --- Waarschuwing dagconsumptie (Nieuw toegevoegd) ---
-    // Als er minder dan 60 seconden over zijn (en meer dan 0)
+function updateClocks() {
+    if (!gameStartTime) return;
+    const nu = Date.now(), diff = nu - gameStartTime, resterend = (gameStartTime + (120 * 60 * 1000)) - nu;
+    
+    if (resterend <= 0) return showOverlay("Einde", "De tijd is om!");
+
+    // Algemene klok (uren:minuten:seconden)
+    const h = Math.floor(resterend / 3600000).toString().padStart(2, '0');
+    const m = Math.floor((resterend % 3600000) / 60000).toString().padStart(2, '0');
+    const s = Math.floor((resterend % 60000) / 1000).toString().padStart(2, '0');
+    document.getElementById('gameClock').innerText = `${h}:${m}:${s}`;
+
+    // --- Nieuw: Berekening voor de 15-minuten cyclus ---
+    const msTotVolgendeCyclus = 15 * 60 * 1000 - (diff % (15 * 60 * 1000));
+    
+    const dm = Math.floor(msTotVolgendeCyclus / 60000).toString().padStart(2, '0');
+    const ds = Math.floor((msTotVolgendeCyclus % 60000) / 1000).toString().padStart(2, '0');
+    document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
+
+    // Waarschuwing dagconsumptie (tussen 60 en 58 seconden voor de deadline)
     if (msTotVolgendeCyclus < 60000 && msTotVolgendeCyclus > 58000) {
         showStatus("⚠️ Let op: Dagconsumptie over 1 minuut!", 5000);
-        }
+    }
+} // <--- Deze accolade sloot de functie voorheen niet af!
 
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
