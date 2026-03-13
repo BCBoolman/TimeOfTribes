@@ -9,11 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
+        /* --- ALGEMENE STIJLEN --- */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cinzel', serif; }
         body { background: #000; height: 100vh; width: 100vw; color: #d1d1d1; overflow: hidden; position: relative; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
 
-        /* UI LAYERS */
+        /* --- TOP UI (Tijd en Grondstoffen) --- */
         .game-ui-top { position: fixed; top: 0; width: 100%; z-index: 1000; pointer-events: none; }
         .timer-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -28,7 +29,7 @@
             font-weight: bold; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* KNOPPEN */
+        /* --- KNOPPEN STYLING --- */
         .game-btn, .btn-interact {
             background: rgba(0, 8, 20, 0.9); backdrop-filter: blur(5px);
             color: #fff; border: 2px solid rgba(255, 255, 255, 0.3);
@@ -46,14 +47,12 @@
         }
         .game-ui-bottom .game-btn { flex: 1; pointer-events: auto; }
 
-        /* POPUP STYLING */
+        /* --- POPUP & MAP ICONS --- */
         .leaflet-popup-content-wrapper {
             background: rgba(0, 8, 20, 0.95); color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0; padding: 5px;
         }
         .leaflet-popup-tip { background: rgba(0, 8, 20, 0.95); }
-
-        /* MARKERS */
         .custom-icon-container {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 60px !important; height: 60px !important; position: relative; z-index: 500 !important;
@@ -66,17 +65,50 @@
         @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
         .status-attack { color: #ff0000; } .status-claim { color: #000; } .status-upgrade { color: #00ff00; }
 
+        /* --- ALGEMENE MELDINGEN --- */
         #status-bar {
             position: fixed; top: 145px; left: 50%; transform: translateX(-50%);
             background: rgba(220, 38, 38, 0.95); color: white; padding: 12px 25px;
             font-size: 1rem; font-weight: bold; z-index: 2000; display: none;
             border: 2px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; width: 85%;
         }
-
         #game-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 5, 15, 0.98); z-index: 9999;
             display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        }
+
+        /* --- HANDELSPOST MENU --- */
+        #trade-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 5, 15, 0.95); z-index: 9000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; overflow-y: auto;
+        }
+        .trade-container {
+            background: rgba(0, 8, 20, 0.95); border: 2px solid #fbbf24;
+            padding: 20px; border-radius: 8px; width: 100%; max-width: 400px;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+        }
+        .trade-title { color: #fbbf24; text-align: center; margin-bottom: 15px; font-size: 1.5rem; }
+        .trade-section { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+        .trade-section h3 { font-size: 0.9rem; text-align: center; margin-bottom: 10px; color: #d1d1d1; }
+        .trade-select, .trade-input-pin {
+            width: 100%; padding: 10px; background: #000; color: #fff;
+            border: 1px solid rgba(255,255,255,0.3); font-family: 'Cinzel', serif;
+            margin-bottom: 10px; border-radius: 4px; font-size: 1rem;
+        }
+        .trade-grid { display: flex; justify-content: space-between; gap: 5px; }
+        .trade-col { display: flex; flex-direction: column; align-items: center; width: 22%; }
+        .trade-btn-small { 
+            background: #1f2937; color: white; border: 1px solid #4b5563; 
+            width: 100%; padding: 8px 0; font-size: 1.2rem; cursor: pointer; font-weight: bold;
+        }
+        .trade-btn-small:active { background: #fbbf24; color: black; }
+        .trade-val { 
+            width: 100%; text-align: center; background: #000; color: #fff;
+            border: 1px solid rgba(255,255,255,0.2); padding: 5px 0; font-family: sans-serif;
+            font-size: 1.1rem; border-top: none; border-bottom: none; pointer-events: none;
         }
     </style>
 </head>
@@ -86,7 +118,6 @@
         <h1 style="font-size: 2rem; letter-spacing: 5px;">Time of Tribes</h1>
         <p id="overlay-msg" style="font-size: 1.2rem; margin-top: 20px;">Laden...</p>
     </div>
-
     <div id="status-bar">Melding...</div>
 
     <div class="game-ui-top">
@@ -107,25 +138,90 @@
 
     <div class="game-ui-bottom">
         <button class="game-btn" onclick="locateUser()">📍 GPS</button>
-        <button class="game-btn" onclick="showStatus('🤝 Handelspost opent binnenkort...')">🤝 Handel</button>
+        <button class="game-btn" onclick="openTradeMenu()">🤝 Handel</button>
         <button class="game-btn" onclick="showStatus('📜 Geen nieuwe missies gevonden.')">📜 Missies</button>
+    </div>
+
+    <div id="trade-modal">
+        <div class="trade-container">
+            <h2 class="trade-title">🤝 Handelspost</h2>
+            
+            <select id="trade-team-select" class="trade-select" onchange="updatePlayerDropdown()">
+                <option value="">Laden...</option>
+            </select>
+            
+            <select id="trade-player-select" class="trade-select">
+                <option value="">Kies eerst een team</option>
+            </select>
+
+            <div class="trade-section">
+                <h3>Jouw Bod (Wat jij geeft)</h3>
+                <div class="trade-grid">
+                    <div class="trade-col">
+                        <span>🌾</span><button class="trade-btn-small" onclick="adjRes('of_f', 5)">+</button><input type="text" id="of_f" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_f', -5)">-</button>
+                    </div>
+                    <div class="trade-col">
+                        <span>🪵</span><button class="trade-btn-small" onclick="adjRes('of_w', 5)">+</button><input type="text" id="of_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_w', -5)">-</button>
+                    </div>
+                    <div class="trade-col">
+                        <span>🪨</span><button class="trade-btn-small" onclick="adjRes('of_s', 5)">+</button><input type="text" id="of_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_s', -5)">-</button>
+                    </div>
+                    <div class="trade-col">
+                        <span>💰</span><button class="trade-btn-small" onclick="adjRes('of_c', 5)">+</button><input type="text" id="of_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_c', -5)">-</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trade-section">
+                <h3>Tegenbod (Wat zij geven)</h3>
+                <div class="trade-grid">
+                    <div class="trade-col">
+                        <span>🌾</span><button class="trade-btn-small" onclick="adjRes('req_f', 5)">+</button><input type="text" id="req_f" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_f', -5)">-</button>
+                    </div>
+                    <div class="trade-col">
+                        <span>🪵</span><button class="trade-btn-small" onclick="adjRes('req_w', 5)">+</button><input type="text" id="req_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_w', -5)">-</button>
+                    </div>
+                    <div class="trade-col">
+                        <span>🪨</span><button class="trade-btn-small" onclick="adjRes('req_s', 5)">+</button><input type="text" id="req_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_s', -5)">-</button>
+                    </div>
+                    <div class="trade-col">
+                        <span>💰</span><button class="trade-btn-small" onclick="adjRes('req_c', 5)">+</button><input type="text" id="req_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_c', -5)">-</button>
+                    </div>
+                </div>
+            </div>
+
+            <input type="password" id="trade-pin" class="trade-input-pin" placeholder="Pincode van partner...">
+            <button class="game-btn" style="background: #166534; border-color: #22c55e;" onclick="submitTrade()">Voer Handel Uit</button>
+            <button class="game-btn btn-cancel" onclick="closeTradeMenu()">Sluiten</button>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbwLwIIjBARWTb6PD6UWC1j3QVsPaMDp35ynEB-pColsLv7P6o-3zV9UXpR4oommJPGy2A/exec"; 
+        // VERVANG DEZE LINK MET NIEUWE WEB APP URL
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwbDfRGH3V0zP7Ml25ewakjeiFILV7AL-50Y-YCPiYw6UzEuTNeeIppaYdMtwsJ9mbuuA/exec"; 
+        
+        // --- MAP SETUP ---
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
         
         const locationLayer = L.layerGroup().addTo(map);
         let userMarker, userTeam = "", isInteracting = false, gameStartTime = null;
+        let globalTradeData = {};
 
+        // --- HULP FUNCTIES ---
         function showStatus(msg, duration = 4000) {
             const bar = document.getElementById('status-bar');
             bar.innerText = msg; bar.style.display = "block";
             setTimeout(() => { bar.style.display = "none"; }, duration);
         }
 
+        function showOverlay(title, msg) {
+            document.getElementById('game-overlay').style.display = "flex";
+            document.getElementById('overlay-msg').innerText = msg;
+        }
+
+        // --- TIJD & CLOCK ---
         async function fetchStartTime() {
             try {
                 const r = await fetch(`${scriptURL}?action=getStartTime`);
@@ -135,11 +231,6 @@
                 heartbeat();
                 document.getElementById('game-overlay').style.display = "none";
             } catch(e) { setTimeout(fetchStartTime, 5000); }
-        }
-
-        function showOverlay(title, msg) {
-            document.getElementById('game-overlay').style.display = "flex";
-            document.getElementById('overlay-msg').innerText = msg;
         }
 
         function heartbeat() { updateClocks(); setTimeout(heartbeat, 1000); }
@@ -159,6 +250,7 @@
             document.getElementById('dayTimer').innerText = `${dm}:${ds}`;
         }
 
+        // --- MAP UPDATE (Locaties en resources ophalen) ---
         async function updateGame() {
             const naam = localStorage.getItem("tribe_player");
             if (!naam) return;
@@ -201,14 +293,12 @@
                         blinkIcon = `<div class="warning-blink ${bC}">!</div>`;
                     }
 
-                    // CHECK OF ER EEN ACTIE LOOPT VOOR DIT SPECIFIEKE PUNT
                     let cancelBtnHTML = "";
                     const activeData = JSON.parse(localStorage.getItem('activeInteract'));
                     if (activeData && activeData.id === loc.id) {
                         cancelBtnHTML = `<button class="btn-interact btn-cancel" onclick="cancelActiveAction(${loc.id})">✖ Annuleren</button>`;
                     }
 
-                    // BUTTONS ALLEEN TONEN ALS JE IN DE BUURT BENT OF ALS ER EEN ACTIE LOOPT
                     let actionBtnHTML = "";
                     if (isWithinRange || (activeData && activeData.id === loc.id)) {
                         actionBtnHTML = `<button class="btn-interact" id="btn-${loc.id}" 
@@ -238,9 +328,9 @@
             } catch(e) {}
         }
 
+        // --- INTERACTIE LOGICA (Knoppen indrukken en timers) ---
         async function startInteract(id, act, duration, coords) {
             if (isInteracting) return showStatus("❌ Je bent al bezig!");
-
             try { await fetch(`${scriptURL}?action=interact&subAction=startCapture&id=${id}&type=${act}&team=${encodeURIComponent(userTeam)}`); } catch(e) {}
             const endTimestamp = Date.now() + (duration * 1000);
             localStorage.setItem('activeInteract', JSON.stringify({ id, act, endTimestamp, coords }));
@@ -285,18 +375,101 @@
             updateGame();
         }
 
+        // --- GPS LOCATIE ---
         function locateUser() { map.locate({setView: true, maxZoom: 17}); }
         map.on('locationfound', e => {
             if (!userMarker) userMarker = L.circleMarker(e.latlng, {radius: 10, color: '#fff', weight: 3, fillOpacity: 1, fillColor: '#2563eb'}).addTo(map);
             else userMarker.setLatLng(e.latlng);
         });
 
+        // --- HANDELSPOST LOGICA ---
+        async function openTradeMenu() {
+            document.getElementById('trade-modal').style.display = "flex";
+            const teamSelect = document.getElementById('trade-team-select');
+            teamSelect.innerHTML = '<option value="">Teams laden...</option>';
+            
+            try {
+                const r = await fetch(`${scriptURL}?action=getTradeData`);
+                const d = await r.json();
+                if (d.result === "success") {
+                    globalTradeData = d.data;
+                    teamSelect.innerHTML = '<option value="">-- Selecteer een Team --</option>';
+                    for (let team in globalTradeData) {
+                        if (team.toLowerCase() !== userTeam.toLowerCase()) {
+                            let opt = document.createElement('option');
+                            opt.value = team; opt.innerText = team;
+                            teamSelect.appendChild(opt);
+                        }
+                    }
+                }
+            } catch(e) { teamSelect.innerHTML = '<option value="">Fout bij laden</option>'; }
+        }
+
+        function updatePlayerDropdown() {
+            const team = document.getElementById('trade-team-select').value;
+            const playerSelect = document.getElementById('trade-player-select');
+            playerSelect.innerHTML = '<option value="">-- Selecteer een Speler --</option>';
+            
+            if (team && globalTradeData[team]) {
+                globalTradeData[team].forEach(speler => {
+                    let opt = document.createElement('option');
+                    opt.value = speler; opt.innerText = speler;
+                    playerSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function adjRes(id, amount) {
+            const el = document.getElementById(id);
+            let val = parseInt(el.value) || 0; val += amount; if (val < 0) val = 0;
+            el.value = val;
+        }
+
+        function closeTradeMenu() {
+            document.getElementById('trade-modal').style.display = "none";
+            ['of_f','of_w','of_s','of_c','req_f','req_w','req_s','req_c'].forEach(id => document.getElementById(id).value = '0');
+            document.getElementById('trade-pin').value = '';
+            document.getElementById('trade-team-select').value = '';
+            document.getElementById('trade-player-select').innerHTML = '<option value="">Kies eerst een team</option>';
+        }
+
+        async function submitTrade() {
+            const p1 = localStorage.getItem("tribe_player");
+            const p2 = document.getElementById('trade-player-select').value;
+            const pin = document.getElementById('trade-pin').value;
+            
+            if (!p2) return showStatus("❌ Selecteer eerst met wie je handelt.");
+            if (!pin) return showStatus("❌ De partner moet zijn/haar pincode invullen.");
+
+            const vals = {
+                oF: document.getElementById('of_f').value, oW: document.getElementById('of_w').value,
+                oS: document.getElementById('of_s').value, oC: document.getElementById('of_c').value,
+                rF: document.getElementById('req_f').value, rW: document.getElementById('req_w').value,
+                rS: document.getElementById('req_s').value, rC: document.getElementById('req_c').value
+            };
+
+            const totalTrade = Object.values(vals).reduce((a, b) => a + parseInt(b), 0);
+            if (totalTrade === 0) return showStatus("❌ Er is geen bod ingevuld.");
+
+            showStatus("⏳ Handel verwerken...");
+            closeTradeMenu();
+
+            try {
+                const query = `&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&pin=${encodeURIComponent(pin)}&oF=${vals.oF}&oW=${vals.oW}&oS=${vals.oS}&oC=${vals.oC}&rF=${vals.rF}&rW=${vals.rW}&rS=${vals.rS}&rC=${vals.rC}`;
+                const r = await fetch(`${scriptURL}?action=executeTrade${query}`);
+                const d = await r.json();
+                
+                if (d.result === "success") { alert(d.msg); updateGame(); } 
+                else { alert("MISLUKT: " + d.msg); }
+            } catch(e) { showStatus("❌ Verbindingsfout bij handelen."); }
+        }
+
+        // --- START THE GAME ---
         window.onload = () => { 
             fetchStartTime(); 
             updateGame(); 
             setInterval(updateGame, 15000); 
             locateUser(); 
-            // Check bij refresh of er nog een timer loopt
             if(localStorage.getItem('activeInteract')) runTimerCycle();
         };
     </script>
