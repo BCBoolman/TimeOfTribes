@@ -58,17 +58,15 @@
             width: 60px !important; height: 60px !important; position: relative; z-index: 500 !important;
         }
 
-        /* UITROEPTEKEN BASIS */
         .warning-blink {
             position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
             animation: blinker 0.8s linear infinite; font-weight: 900; font-size: 48px; z-index: 9999 !important;
             text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0px 0px 10px rgba(0,0,0,1);
         }
 
-        /* UITROEPTEKEN KLEUREN (Nu correct buiten de blinker klasse) */
-        .status-claim { color: #000 !important; }   /* Zwart voor claimen */
-        .status-upgrade { color: #22c55e !important; } /* Groen voor upgraden */
-        .status-attack { color: #ff0000 !important; }  /* Rood voor aanvallen */
+        .status-claim { color: #000 !important; }   
+        .status-upgrade { color: #22c55e !important; } 
+        .status-attack { color: #ff0000 !important; }  
 
         @keyframes blinker { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
 
@@ -85,19 +83,32 @@
             display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center;
         }
 
-        /* --- HANDELSPOST MENU --- */
-        #trade-modal {
+        /* --- HANDELSPOST & MISSIES MODALS --- */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 5, 15, 0.95); z-index: 9000;
             display: none; flex-direction: column; align-items: center; justify-content: center;
             padding: 20px; overflow-y: auto;
         }
-        .trade-container {
+        .modal-container {
             background: rgba(0, 8, 20, 0.95); border: 2px solid #fbbf24;
             padding: 20px; border-radius: 8px; width: 100%; max-width: 400px;
-            box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.2); color: #fff;
         }
-        .trade-title { color: #fbbf24; text-align: center; margin-bottom: 15px; font-size: 1.5rem; }
+        .modal-title { color: #fbbf24; text-align: center; margin-bottom: 15px; font-size: 1.5rem; }
+        
+        /* Specifieke Missie Stijlen */
+        #mission-container { border-color: #3b82f6; box-shadow: 0 0 30px rgba(59, 130, 246, 0.2); }
+        #mission-container .modal-title { color: #3b82f6; }
+        .mission-day { text-align: center; color: #fbbf24; font-size: 0.9rem; margin-bottom: 15px; }
+        .mission-desc { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 6px; margin-bottom: 15px; font-size: 1rem; line-height: 1.5; text-align: left;}
+        .mission-reward { text-align: center; font-weight: bold; font-size: 1.2rem; color: #fbbf24; margin-bottom: 15px; }
+        .mission-status { text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 20px; padding: 10px; border-radius: 6px; }
+        
+        .status-done { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .status-pending { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+        /* Handel Specifieke Stijlen */
         .trade-section { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-bottom: 15px; }
         .trade-section h3 { font-size: 0.9rem; text-align: center; margin-bottom: 10px; color: #d1d1d1; }
         .trade-select, .trade-input-pin {
@@ -146,12 +157,23 @@
     <div class="game-ui-bottom">
         <button class="game-btn" onclick="locateUser()">📍 GPS</button>
         <button class="game-btn" onclick="openTradeMenu()">🤝 Handel</button>
-        <button class="game-btn" onclick="showStatus('📜 Geen nieuwe missies gevonden.')">📜 Missies</button>
+        <button class="game-btn" onclick="openMissionMenu()">📜 Missies</button>
     </div>
 
-    <div id="trade-modal">
-        <div class="trade-container">
-            <h2 class="trade-title">🤝 Handelspost</h2>
+    <div id="mission-modal" class="modal-overlay">
+        <div class="modal-container" id="mission-container">
+            <h2 class="modal-title" id="mis-title">Laden...</h2>
+            <div class="mission-day" id="mis-day">Huidige Dag: -</div>
+            <div class="mission-desc" id="mis-desc">Even geduld...</div>
+            <div class="mission-reward">🎁 Beloning: <span id="mis-reward">-</span></div>
+            <div class="mission-status status-pending" id="mis-status">⏳ Aan het laden...</div>
+            <button class="game-btn btn-cancel" onclick="closeMissionMenu()">Sluiten</button>
+        </div>
+    </div>
+
+    <div id="trade-modal" class="modal-overlay">
+        <div class="modal-container">
+            <h2 class="modal-title">🤝 Handelspost</h2>
             <select id="trade-team-select" class="trade-select" onchange="updatePlayerDropdown()"><option value="">Laden...</option></select>
             <select id="trade-player-select" class="trade-select"><option value="">Kies eerst een team</option></select>
             <div class="trade-section">
@@ -180,7 +202,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxZau3BolyGskjDXVVENszgxK0JUYErXnjoYyZdROYeXNnFG2VlM-bCHcVjeaOA1I1ybw/exec"; 
+        const scriptURL = "https://script.google.com/macros/s/AKfycbz9HQWaeC150g2Spz3ppmcM0F-6fLEbeT79SNo6UyAZpGAuWGrbi1LUCuQrIJRSacdnEQ/exec"; 
         
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
@@ -291,7 +313,6 @@
                         displayTime = m > 0 ? `${m}m ${s > 0 ? s + 's' : ''}` : `${s}s`;
                     }
 
-                    // --- UITROEPTEKEN LOGICA ---
                     let blinkIcon = "";
                     if (currentStatus !== "ok") {
                         let bClass = "";
@@ -395,6 +416,7 @@
             else userMarker.setLatLng(e.latlng);
         });
 
+        // --- HANDEL LOGICA ---
         async function openTradeMenu() {
             document.getElementById('trade-modal').style.display = "flex";
             const teamSelect = document.getElementById('trade-team-select');
@@ -450,6 +472,50 @@
                 const d = await r.json();
                 alert(d.msg); updateGame();
             } catch(e) { showStatus("❌ Fout."); }
+        }
+
+        // --- MISSIE LOGICA ---
+        async function openMissionMenu() {
+            document.getElementById('mission-modal').style.display = "flex";
+            document.getElementById('mis-title').innerText = "Missie ophalen...";
+            document.getElementById('mis-desc').innerText = "Even geduld...";
+            document.getElementById('mis-reward').innerText = "-";
+            document.getElementById('mis-status').className = "mission-status status-pending";
+            document.getElementById('mis-status').innerText = "⏳ Laden...";
+            document.getElementById('mis-day').innerText = "";
+
+            const naam = localStorage.getItem("tribe_player");
+            if (!naam) return showStatus("❌ Geen speler gevonden.");
+
+            try {
+                const r = await fetch(`${scriptURL}?action=getMission&naam=${encodeURIComponent(naam)}`);
+                const d = await r.json();
+                
+                if (d.result === "success") {
+                    document.getElementById('mis-title').innerText = d.data.titel;
+                    document.getElementById('mis-day').innerText = `Huidige Dag: ${d.data.cyclus}`;
+                    document.getElementById('mis-desc').innerHTML = d.data.omschrijving;
+                    document.getElementById('mis-reward').innerText = d.data.beloning;
+                    
+                    if (d.data.voltooid) {
+                        document.getElementById('mis-status').className = "mission-status status-done";
+                        document.getElementById('mis-status').innerText = "✅ Missie Goedgekeurd!";
+                    } else {
+                        document.getElementById('mis-status').className = "mission-status status-pending";
+                        document.getElementById('mis-status').innerText = "⏳ Wachten op goedkeuring spelleiding";
+                    }
+                } else {
+                    document.getElementById('mis-title').innerText = "Geen Missie";
+                    document.getElementById('mis-desc').innerText = d.msg || "Er is een fout opgetreden.";
+                }
+            } catch(e) {
+                document.getElementById('mis-title').innerText = "Fout";
+                document.getElementById('mis-desc').innerText = "Kan missie niet laden. Controleer je verbinding.";
+            }
+        }
+
+        function closeMissionMenu() {
+            document.getElementById('mission-modal').style.display = "none";
         }
 
         window.onload = () => { fetchStartTime(); updateGame(); setInterval(updateGame, 15000); locateUser(); if(localStorage.getItem('activeInteract')) runTimerCycle(); };
