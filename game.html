@@ -117,7 +117,8 @@
             margin-bottom: 10px; border-radius: 4px; font-size: 1rem;
         }
         .trade-grid { display: flex; justify-content: space-between; gap: 5px; }
-        .trade-col { display: flex; flex-direction: column; align-items: center; width: 22%; }
+        .trade-col { display: flex; flex-direction: column; align-items: center; width: 18%; }
+        .trade-col-card { display: none; } /* Standaard verborgen */
         .trade-btn-small { 
             background: #1f2937; color: white; border: 1px solid #4b5563; 
             width: 100%; padding: 8px 0; font-size: 1.2rem; cursor: pointer; font-weight: bold;
@@ -171,11 +172,12 @@
         </div>
     </div>
 
-    <div id="trade-modal" class="modal-overlay">
+<div id="trade-modal" class="modal-overlay">
         <div class="modal-container">
             <h2 class="modal-title">🤝 Handelspost</h2>
             <select id="trade-team-select" class="trade-select" onchange="updatePlayerDropdown()"><option value="">Laden...</option></select>
             <select id="trade-player-select" class="trade-select"><option value="">Kies eerst een team</option></select>
+            
             <div class="trade-section">
                 <h3>Jouw Bod</h3>
                 <div class="trade-grid">
@@ -183,8 +185,10 @@
                     <div class="trade-col"><span>🪵</span><button class="trade-btn-small" onclick="adjRes('of_w', 5)">+</button><input type="text" id="of_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_w', -5)">-</button></div>
                     <div class="trade-col"><span>🪨</span><button class="trade-btn-small" onclick="adjRes('of_s', 5)">+</button><input type="text" id="of_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_s', -5)">-</button></div>
                     <div class="trade-col"><span>💰</span><button class="trade-btn-small" onclick="adjRes('of_c', 5)">+</button><input type="text" id="of_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_c', -5)">-</button></div>
+                    <div class="trade-col trade-col-card"><span>🃏</span><button class="trade-btn-small" onclick="adjRes('of_k', 1)">+</button><input type="text" id="of_k" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('of_k', -1)">-</button></div>
                 </div>
             </div>
+
             <div class="trade-section">
                 <h3>Tegenbod</h3>
                 <div class="trade-grid">
@@ -192,17 +196,20 @@
                     <div class="trade-col"><span>🪵</span><button class="trade-btn-small" onclick="adjRes('req_w', 5)">+</button><input type="text" id="req_w" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_w', -5)">-</button></div>
                     <div class="trade-col"><span>🪨</span><button class="trade-btn-small" onclick="adjRes('req_s', 5)">+</button><input type="text" id="req_s" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_s', -5)">-</button></div>
                     <div class="trade-col"><span>💰</span><button class="trade-btn-small" onclick="adjRes('req_c', 5)">+</button><input type="text" id="req_c" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_c', -5)">-</button></div>
+                    <div class="trade-col trade-col-card"><span>🃏</span><button class="trade-btn-small" onclick="adjRes('req_k', 1)">+</button><input type="text" id="req_k" class="trade-val" value="0" readonly><button class="trade-btn-small" onclick="adjRes('req_k', -1)">-</button></div>
                 </div>
             </div>
+
             <input type="password" id="trade-pin" class="trade-input-pin" placeholder="Pincode partner...">
             <button class="game-btn" style="background:#166534; border-color:#22c55e;" onclick="submitTrade()">Voer Handel Uit</button>
             <button class="game-btn btn-cancel" onclick="closeTradeMenu()">Sluiten</button>
         </div>
     </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbwjPYRf0Ca2NCW0i9mShg0Xe3lkw_qkTYB53CDQC-l8lEAlEAhoKKgjspfArjKJ9LeMJA/exec"; 
+        const scriptURL = "https://script.google.com/macros/s/AKfycbyKirs5bDaBDSBRAgzqXSvdJB_Eu5pl2LgkP4-URldc53yPt-szbIX7XweXH4gXVowxbg/exec"; 
         
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
@@ -437,9 +444,20 @@
             } catch(e) { teamSelect.innerHTML = '<option value="">Fout!</option>'; }
         }
 
-        function updatePlayerDropdown() {
+function updatePlayerDropdown() {
             const team = document.getElementById('trade-team-select').value;
             const playerSelect = document.getElementById('trade-player-select');
+            const cardCols = document.querySelectorAll('.trade-col-card');
+            
+            // Toon kaarten alleen als 'Centrale Post' is geselecteerd
+            if (team === "Centrale Post") {
+                cardCols.forEach(el => el.style.display = "flex");
+            } else {
+                cardCols.forEach(el => el.style.display = "none");
+                document.getElementById('of_k').value = "0";
+                document.getElementById('req_k').value = "0";
+            }
+
             playerSelect.innerHTML = '<option value="">-- Selecteer Speler --</option>';
             if (team && globalTradeData[team]) {
                 globalTradeData[team].forEach(speler => {
@@ -449,29 +467,49 @@
             }
         }
 
-        function adjRes(id, amount) {
-            const el = document.getElementById(id);
-            let val = parseInt(el.value) || 0; val += amount; if (val < 0) val = 0; el.value = val;
-        }
-
         function closeTradeMenu() {
             document.getElementById('trade-modal').style.display = "none";
-            ['of_f','of_w','of_s','of_c','req_f','req_w','req_s','req_c'].forEach(id => document.getElementById(id).value = '0');
+            // Reset alle velden inclusief de nieuwe 'k' velden
+            ['of_f','of_w','of_s','of_c','of_k','req_f','req_w','req_s','req_c','req_k'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = '0';
+            });
             document.getElementById('trade-pin').value = '';
         }
 
         async function submitTrade() {
-            const p1 = localStorage.getItem("tribe_player"), p2 = document.getElementById('trade-player-select').value, pin = document.getElementById('trade-pin').value;
+            const p1 = localStorage.getItem("tribe_player");
+            const p2 = document.getElementById('trade-player-select').value;
+            const pin = document.getElementById('trade-pin').value;
+            
             if (!p2 || !pin) return showStatus("❌ Selecteer speler en vul pin in.");
-            const vals = { oF: document.getElementById('of_f').value, oW: document.getElementById('of_w').value, oS: document.getElementById('of_s').value, oC: document.getElementById('of_c').value, rF: document.getElementById('req_f').value, rW: document.getElementById('req_w').value, rS: document.getElementById('req_s').value, rC: document.getElementById('req_c').value };
+            
+            const vals = { 
+                oF: document.getElementById('of_f').value, 
+                oW: document.getElementById('of_w').value, 
+                oS: document.getElementById('of_s').value, 
+                oC: document.getElementById('of_c').value,
+                oK: document.getElementById('of_k').value, // Kaarten Bod
+                rF: document.getElementById('req_f').value, 
+                rW: document.getElementById('req_w').value, 
+                rS: document.getElementById('req_s').value, 
+                rC: document.getElementById('req_c').value,
+                rK: document.getElementById('req_k').value  // Kaarten Verzoek
+            };
+
             showStatus("⏳ Verwerken...");
             closeTradeMenu();
+
             try {
-                const query = `&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&pin=${encodeURIComponent(pin)}&oF=${vals.oF}&oW=${vals.oW}&oS=${vals.oS}&oC=${vals.oC}&rF=${vals.rF}&rW=${vals.rW}&rS=${vals.rS}&rC=${vals.rC}`;
+                // Voeg oK en rK toe aan de query string
+                const query = `&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&pin=${encodeURIComponent(pin)}&oF=${vals.oF}&oW=${vals.oW}&oS=${vals.oS}&oC=${vals.oC}&oK=${vals.oK}&rF=${vals.rF}&rW=${vals.rW}&rS=${vals.rS}&rC=${vals.rC}&rK=${vals.rK}`;
                 const r = await fetch(`${scriptURL}?action=executeTrade${query}`);
                 const d = await r.json();
-                alert(d.msg); updateGame();
-            } catch(e) { showStatus("❌ Fout."); }
+                alert(d.msg); 
+                updateGame();
+            } catch(e) { 
+                showStatus("❌ Netwerkfout bij handel."); 
+            }
         }
 
         // --- MISSIE LOGICA ---
