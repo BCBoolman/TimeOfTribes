@@ -172,7 +172,7 @@
         </div>
     </div>
 
-<div id="trade-modal" class="modal-overlay">
+    <div id="trade-modal" class="modal-overlay">
         <div class="modal-container">
             <h2 class="modal-title">🤝 Handelspost</h2>
             <select id="trade-team-select" class="trade-select" onchange="updatePlayerDropdown()"><option value="">Laden...</option></select>
@@ -205,11 +205,11 @@
             <button class="game-btn btn-cancel" onclick="closeTradeMenu()">Sluiten</button>
         </div>
     </div>
-    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycby85Uo-98PvJobn_93jKHd66QiIw-bvMGtP8xFRY063WKCp1zd5vP_5PEyjYAjNQxmnAA/exec"; 
+        // VERGEET NIET: Vervang dit door jouw nieuwe Google Apps Script URL als je die opnieuw publiceert!
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwYj9XisW59GP78W9OjOb0RZsCDLcCCIczipgfBKlV0F1hXgcnkc8QwV9B_F1nmaPlPaw/exec"; 
         
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.148, 4.517], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png').addTo(map);
@@ -226,6 +226,17 @@
         function showOverlay(title, msg) {
             document.getElementById('game-overlay').style.display = "flex";
             document.getElementById('overlay-msg').innerText = msg;
+        }
+
+        // DEZE FUNCTIE ONTBRAK EN ZORGT DAT DE HANDELSKNOPPEN WEER WERKEN
+        function adjRes(id, amount) {
+            let el = document.getElementById(id);
+            if (el) {
+                let current = parseInt(el.value) || 0;
+                let newVal = current + amount;
+                if (newVal < 0) newVal = 0; // Geen negatieve handel
+                el.value = newVal;
+            }
         }
 
         async function fetchStartTime() {
@@ -444,12 +455,11 @@
             } catch(e) { teamSelect.innerHTML = '<option value="">Fout!</option>'; }
         }
 
-function updatePlayerDropdown() {
+        function updatePlayerDropdown() {
             const team = document.getElementById('trade-team-select').value;
             const playerSelect = document.getElementById('trade-player-select');
             const cardCols = document.querySelectorAll('.trade-col-card');
             
-            // Toon kaarten alleen als 'Centrale Post' is geselecteerd
             if (team === "Centrale Post") {
                 cardCols.forEach(el => el.style.display = "flex");
             } else {
@@ -469,7 +479,6 @@ function updatePlayerDropdown() {
 
         function closeTradeMenu() {
             document.getElementById('trade-modal').style.display = "none";
-            // Reset alle velden inclusief de nieuwe 'k' velden
             ['of_f','of_w','of_s','of_c','of_k','req_f','req_w','req_s','req_c','req_k'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.value = '0';
@@ -489,23 +498,22 @@ function updatePlayerDropdown() {
                 oW: document.getElementById('of_w').value, 
                 oS: document.getElementById('of_s').value, 
                 oC: document.getElementById('of_c').value,
-                oK: document.getElementById('of_k').value, // Kaarten Bod
+                oK: document.getElementById('of_k').value,
                 rF: document.getElementById('req_f').value, 
                 rW: document.getElementById('req_w').value, 
                 rS: document.getElementById('req_s').value, 
                 rC: document.getElementById('req_c').value,
-                rK: document.getElementById('req_k').value  // Kaarten Verzoek
+                rK: document.getElementById('req_k').value 
             };
 
             showStatus("⏳ Verwerken...");
             closeTradeMenu();
 
             try {
-                // Voeg oK en rK toe aan de query string
                 const query = `&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&pin=${encodeURIComponent(pin)}&oF=${vals.oF}&oW=${vals.oW}&oS=${vals.oS}&oC=${vals.oC}&oK=${vals.oK}&rF=${vals.rF}&rW=${vals.rW}&rS=${vals.rS}&rC=${vals.rC}&rK=${vals.rK}`;
                 const r = await fetch(`${scriptURL}?action=executeTrade${query}`);
                 const d = await r.json();
-                alert(d.msg); 
+                showStatus(d.msg || "Handel verwerkt");
                 updateGame();
             } catch(e) { 
                 showStatus("❌ Netwerkfout bij handel."); 
@@ -535,7 +543,7 @@ function updatePlayerDropdown() {
                     document.getElementById('mis-desc').innerHTML = d.data.omschrijving;
                     document.getElementById('mis-reward').innerText = d.data.beloning;
                     
-                    if (d.data.voltooid) {
+                    if (d.data.voltooid === true || d.data.voltooid === "TRUE" || d.data.voltooid === "WAAR") {
                         document.getElementById('mis-status').className = "mission-status status-done";
                         document.getElementById('mis-status').innerText = "✅ Missie Goedgekeurd!";
                     } else {
@@ -556,7 +564,13 @@ function updatePlayerDropdown() {
             document.getElementById('mission-modal').style.display = "none";
         }
 
-        window.onload = () => { fetchStartTime(); updateGame(); setInterval(updateGame, 15000); locateUser(); if(localStorage.getItem('activeInteract')) runTimerCycle(); };
+        window.onload = () => { 
+            fetchStartTime(); 
+            updateGame(); 
+            setInterval(updateGame, 15000); 
+            locateUser(); 
+            if(localStorage.getItem('activeInteract')) runTimerCycle(); 
+        };
     </script>
 </body>
 </html>
