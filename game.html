@@ -307,8 +307,16 @@
                     if (lType.includes("hout")) emoji = "🪵";
                     if (lType.includes("steen")) emoji = "🪨";
 
-                    if (rawOwner === "geen") { 
-                        act = "claim"; btnTxt = "Claimen"; cost = "75🌾, 75🪵, 75🪨"; 
+if (rawOwner === "geen") { 
+                        act = "claim"; btnTxt = "Claimen"; 
+                        
+                        // Check of het een basis is voor de claim-kosten
+                        if (lType.includes("basis")) {
+                            cost = "300🌾, 300🪵, 300🪨, 150💰";
+                        } else {
+                            cost = "75🌾, 75🪵, 75🪨"; 
+                        }
+                        
                         time = loc.claimDuration; displayTime = time + "s";
                     } else if (isOwner) { 
                         act = "upgrade"; btnTxt = "Upgraden"; time = 30;
