@@ -20,9 +20,16 @@
             display: flex; justify-content: space-between; align-items: center;
             background: rgba(0, 8, 20, 0.9); backdrop-filter: blur(5px);
             padding: 15px 20px; border-bottom: 2px solid rgba(255, 255, 255, 0.2); pointer-events: auto;
+            position: relative; /* Belangrijk: zorgt dat het logo hierbinnen blijft */
+            }
+                #gameClock, #dayTimer { font-size: 1.3rem; font-weight: bold; color: #fff; }
+                .top-logo { 
+            height: 55px; 
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
+            position: absolute; 
+            left: 50%; 
+            transform: translateX(-50%); 
         }
-        #gameClock, #dayTimer { font-size: 1.3rem; font-weight: bold; color: #fff; }
-        .top-logo { height: 55px; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4)); }
         .resource-row {
             display: flex; justify-content: space-around; background: rgba(0, 0, 0, 0.8);
             padding: 12px 5px; color: #fbbf24; pointer-events: auto; font-size: 1.1rem;
@@ -470,11 +477,20 @@ function triggerGameOver(reason) {
             else userMarker.setLatLng(e.latlng);
         });
 
-        // --- HANDEL LOGICA ---
+// --- HANDEL LOGICA ---
         async function openTradeMenu() {
             document.getElementById('trade-modal').style.display = "flex";
             const teamSelect = document.getElementById('trade-team-select');
             teamSelect.innerHTML = '<option value="">Teams laden...</option>';
+            
+            // AANGEPAST: Toon kaarten direct bij openen als de speler zelf Centrale Post is
+            const cardCols = document.querySelectorAll('.trade-col-card');
+            if (userTeam === "Centrale Post") {
+                cardCols.forEach(el => el.style.display = "flex");
+            } else {
+                cardCols.forEach(el => el.style.display = "none");
+            }
+
             try {
                 const r = await fetch(`${scriptURL}?action=getTradeData`);
                 const d = await r.json();
@@ -496,7 +512,8 @@ function triggerGameOver(reason) {
             const playerSelect = document.getElementById('trade-player-select');
             const cardCols = document.querySelectorAll('.trade-col-card');
             
-            if (team === "Centrale Post") {
+            // AANGEPAST: Toon kaarten als de tegenpartij CP is OF als speler zelf CP is
+            if (team === "Centrale Post" || userTeam === "Centrale Post") {
                 cardCols.forEach(el => el.style.display = "flex");
             } else {
                 cardCols.forEach(el => el.style.display = "none");
