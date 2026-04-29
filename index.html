@@ -6,13 +6,12 @@
     <title>Time of Tribes - Login</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Optionele styling om de downloadknop er goed uit te laten zien */
         .download-btn {
             display: block;
             margin-top: 15px;
             text-align: center;
             text-decoration: none;
-            background-color: #555; /* Een andere kleur dan de inlogknop */
+            background-color: #555;
             color: white;
             padding: 10px;
             border-radius: 5px;
@@ -22,11 +21,29 @@
         .download-btn:hover {
             background-color: #333;
         }
+
+        /* Nieuwe styling voor de live spelstatus */
+        .game-status {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.6); /* Donkere achtergrond voor betere leesbaarheid */
+            padding: 10px;
+            border-radius: 8px;
+            display: none; /* Wordt zichtbaar zodra de status is geladen */
+        }
+        .status-red { color: #ff4d4d; }
+        .status-orange { color: #ffa500; }
+        .status-green { color: #4CAF50; }
     </style>
 </head>
 <body>
     <div class="clouds-overlay"></div> 
     <div class="login-container">
+        
+        <div id="gameStatus" class="game-status">Status ophalen...</div>
+        
         <img src="images/Time of Tribes - logo.svg" alt="Time of Tribes Logo" class="logo">
         
         <h1>Aanmelden</h1>
@@ -56,7 +73,53 @@
     const loginForm = document.getElementById('loginForm');
     const loginBtn = document.getElementById('loginBtn');
     const message = document.getElementById('message');
+    const statusElement = document.getElementById('gameStatus');
 
+    // De Web App URL globaal gedefinieerd zodat beide functies erbij kunnen
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzRZ8ZYxdNUFKDpKnwugaNfd_007ffJgV88t43X2BSun5lflf4nVedNvK-fgPYoU4Kaeg/exec"; 
+
+    // --- NIEUWE FUNCTIE: Haal de live status op ---
+    async function fetchGameStatus() {
+        try {
+            const response = await fetch(`${scriptURL}?action=getStartTime`);
+            if (!response.ok) throw new Error('Netwerk respons was niet ok');
+            
+            const data = await response.json();
+
+            if (data.result === "success") {
+                statusElement.style.display = "block"; // Maak het element zichtbaar
+                
+                if (data.status === "finished") {
+                    statusElement.innerHTML = '<span class="status-red">⦿ Geen spel bezig</span>';
+                } else if (data.status === "waiting") {
+                    // Zet de milliseconden om naar een leesbare datum en tijd
+                    const startDate = new Date(data.startTime);
+                    const day = String(startDate.getDate()).padStart(2, '0');
+                    const month = String(startDate.getMonth() + 1).padStart(2, '0'); // Maanden beginnen bij 0
+                    const year = startDate.getFullYear();
+                    const hours = String(startDate.getHours()).padStart(2, '0');
+                    const minutes = String(startDate.getMinutes()).padStart(2, '0');
+                    
+                    const formattedDate = `${day}-${month}-${year} ${hours}:${minutes}`;
+                    statusElement.innerHTML = `<span class="status-orange">⦿ Spel start op ${formattedDate}</span>`;
+                } else if (data.status === "active") {
+                    statusElement.innerHTML = '<span class="status-green">⦿ Spel is bezig</span>';
+                }
+            }
+        } catch (error) {
+            console.error("Fout bij ophalen van de spelstatus:", error);
+            // Optioneel: verberg of toon een fallback melding als de server niet reageert
+        }
+    }
+
+    // Haal de status direct op bij het inladen van de pagina
+    fetchGameStatus();
+    
+    // Ververs de status elke 60 seconden (60000 milliseconden) automatisch
+    setInterval(fetchGameStatus, 60000);
+
+
+    // --- BESTAANDE LOGIN LOGICA ---
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -66,8 +129,6 @@
         loginBtn.innerText = "Controleren...";
         loginBtn.disabled = true;
         message.innerText = "";
-
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzRZ8ZYxdNUFKDpKnwugaNfd_007ffJgV88t43X2BSun5lflf4nVedNvK-fgPYoU4Kaeg/exec"; 
 
         try {
             const urlWithParams = `${scriptURL}?action=login&naam=${encodeURIComponent(naam)}&pin=${encodeURIComponent(pin)}`;
