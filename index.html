@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time of Tribes - Login</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Optionele styling om de downloadknop er goed uit te laten zien */
+        .download-btn {
+            display: block;
+            margin-top: 15px;
+            text-align: center;
+            text-decoration: none;
+            background-color: #555; /* Een andere kleur dan de inlogknop */
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        .download-btn:hover {
+            background-color: #333;
+        }
+    </style>
 </head>
 <body>
     <div class="clouds-overlay"></div> 
@@ -25,6 +43,10 @@
             </div>
 
             <button type="submit" id="loginBtn">Betreed het Spel</button>
+            
+            <a href="images/Time Of Tribes - Speluitleg.pdf" download="Time Of Tribes - Speluitleg.pdf" class="download-btn">
+                Download Speluitleg (PDF)
+            </a>
         </form>
         
         <p id="message" class="error-msg"></p>
@@ -45,16 +67,13 @@
         loginBtn.disabled = true;
         message.innerText = "";
 
-        // Gebruik je meest recente Web App URL na de 'Nieuwe implementatie'
         const scriptURL = "https://script.google.com/macros/s/AKfycbzRZ8ZYxdNUFKDpKnwugaNfd_007ffJgV88t43X2BSun5lflf4nVedNvK-fgPYoU4Kaeg/exec"; 
 
         try {
-            // CRUCIALE AANPASSING: action=login toegevoegd aan de parameters
             const urlWithParams = `${scriptURL}?action=login&naam=${encodeURIComponent(naam)}&pin=${encodeURIComponent(pin)}`;
             
             const response = await fetch(urlWithParams);
             
-            // Controleer of de response ok is voordat we JSON parsen
             if (!response.ok) throw new Error('Netwerk respons was niet ok');
             
             const data = await response.json();
